@@ -1116,6 +1116,36 @@ const genreDistribution = [
   { label: "Informational", value: 18 },
 ];
 
+type AssignedBentoId =
+  | "completion"
+  | "assigned"
+  | "feedback"
+  | "overdue"
+  | "status"
+  | "leaderboard"
+  | "lexile"
+  | "type"
+  | "genre";
+
+const assignedBentoCards: Array<{
+  id: AssignedBentoId;
+  title: string;
+  value: string;
+  detail: string;
+  icon: typeof BookOpen;
+  tone: "green" | "purple" | "amber" | "red" | "blue";
+}> = [
+  { id: "completion", title: "Completion Rate", value: "80%", detail: "16 / 20 students", icon: CheckCircle2, tone: "green" },
+  { id: "assigned", title: "Tasks Assigned", value: "18", detail: "This week", icon: CalendarDays, tone: "purple" },
+  { id: "feedback", title: "Waiting Feedback", value: "12", detail: "Needs review", icon: MessageCircle, tone: "amber" },
+  { id: "overdue", title: "Overdue Tasks", value: "3", detail: "3 students affected", icon: CircleAlert, tone: "red" },
+  { id: "status", title: "Status Breakdown", value: "136", detail: "Total tasks", icon: ListChecks, tone: "green" },
+  { id: "leaderboard", title: "Leaderboard", value: "100%", detail: "Top completion", icon: Trophy, tone: "amber" },
+  { id: "lexile", title: "Lexile Distribution", value: "34", detail: "800L-1000L peak", icon: BookOpen, tone: "green" },
+  { id: "type", title: "Type Distribution", value: "48", detail: "Reading tasks", icon: FileText, tone: "purple" },
+  { id: "genre", title: "Genre Distribution", value: "46", detail: "Fiction tasks", icon: LibraryBig, tone: "blue" },
+];
+
 const myClassSections: Array<{
   key: MyClassSection;
   title: string;
@@ -1417,6 +1447,193 @@ function GenreDistributionCard() {
   );
 }
 
+function AssignedBentoExpandedContent({ id }: { id: AssignedBentoId }) {
+  if (id === "status") {
+    return (
+      <div className="bento-status-detail">
+        <div className="status-donut" aria-label="Task status chart">
+          <div>
+            <span>Total</span>
+            <strong>136</strong>
+            <span>Tasks</span>
+          </div>
+        </div>
+        <div className="status-legend">
+          {taskStatusBreakdown.map((item) => (
+            <div key={item.label}>
+              <i style={{ backgroundColor: item.color }} />
+              <span>{item.label}</span>
+              <strong>
+                {item.value} ({item.percent}%)
+              </strong>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (id === "leaderboard") {
+    return (
+      <div className="bento-leaderboard-list">
+        {leaderboard.map((student) => (
+          <div key={student.name}>
+            <Badge variant="secondary" className="rank-badge" data-rank={student.rank}>
+              {student.rank}
+            </Badge>
+            <span className="leaderboard-avatar" style={{ backgroundColor: student.color }}>
+              {student.avatar}
+            </span>
+            <strong>{student.name}</strong>
+            <span>
+              {student.done}/{student.total}
+            </span>
+            <em>{student.rate}%</em>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (id === "lexile" || id === "type") {
+    const data = id === "lexile" ? lexileDistribution : typeDistribution;
+    const max = Math.max(...data.map((item) => item.value));
+
+    return (
+      <div className="bento-bars" data-tone={id === "type" ? "purple" : "green"}>
+        {data.map((item) => (
+          <div key={item.label}>
+            <strong>{item.value}</strong>
+            <i style={{ height: `${Math.max(14, (item.value / max) * 100)}%` }} />
+            <span>{item.label}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (id === "genre") {
+    const max = Math.max(...genreDistribution.map((item) => item.value));
+
+    return (
+      <div className="bento-bars">
+        {genreDistribution.map((item) => (
+          <div key={item.label}>
+            <strong>{item.value}</strong>
+            <i style={{ height: `${Math.max(14, (item.value / max) * 100)}%` }} />
+            <span>{item.label}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  const detailRows: Record<AssignedBentoId, Array<[string, string]>> = {
+    completion: [
+      ["Completed students", "16"],
+      ["Assigned students", "20"],
+      ["Best class", "Grade 5 Reading A"],
+      ["Change", "+8% vs last week"],
+    ],
+    assigned: [
+      ["New tasks", "18"],
+      ["Different resources", "7"],
+      ["Most assigned", "Reading"],
+      ["Due this week", "11"],
+    ],
+    feedback: [
+      ["Submitted", "12"],
+      ["Quiz review", "5"],
+      ["Writing review", "4"],
+      ["Discussion review", "3"],
+    ],
+    overdue: [
+      ["Overdue tasks", "3"],
+      ["Affected students", "3"],
+      ["Longest overdue", "2 days"],
+      ["Needs reminder", "Yes"],
+    ],
+    status: [],
+    leaderboard: [],
+    lexile: [],
+    type: [],
+    genre: [],
+  };
+
+  return (
+    <div className="bento-detail-grid">
+      {detailRows[id].map(([label, value]) => (
+        <div key={label}>
+          <span>{label}</span>
+          <strong>{value}</strong>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AssignedBentoCard({
+  card,
+  isExpanded,
+  isAnyExpanded,
+  onToggle,
+}: {
+  card: (typeof assignedBentoCards)[number];
+  isExpanded: boolean;
+  isAnyExpanded: boolean;
+  onToggle: () => void;
+}) {
+  const Icon = card.icon;
+
+  return (
+    <Card
+      role="button"
+      tabIndex={0}
+      className="assigned-bento-card"
+      data-tone={card.tone}
+      data-expanded={isExpanded}
+      data-compressed={isAnyExpanded && !isExpanded}
+      onClick={onToggle}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onToggle();
+        }
+      }}
+    >
+      <CardContent>
+        {isExpanded && (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="bento-close-button"
+            aria-label={`Close ${card.title}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggle();
+            }}
+          >
+            <X size={18} />
+          </Button>
+        )}
+        <div className="bento-card-head">
+          <span className="bento-card-icon">
+            <Icon size={isExpanded ? 30 : 26} />
+          </span>
+          <div>
+            <p>{card.title}</p>
+            <strong>{card.value}</strong>
+            <small>{card.detail}</small>
+          </div>
+        </div>
+        <div className="bento-expanded-body" aria-hidden={!isExpanded}>
+          {isExpanded && <AssignedBentoExpandedContent id={card.id} />}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function MyClassSummaryCard({
   section,
   isActive,
@@ -1563,6 +1780,7 @@ function StudentSection() {
 function AssignedTaskSection() {
   const [taskPeriod, setTaskPeriod] = useState(taskPeriods[0]);
   const [classScope, setClassScope] = useState(assignedClassScopes[0]);
+  const [expandedCardId, setExpandedCardId] = useState<AssignedBentoId | null>(null);
 
   return (
     <section className="assigned-dashboard">
@@ -1669,31 +1887,20 @@ function AssignedTaskSection() {
             </Select>
           </div>
 
-          <section className="assigned-top-grid">
-            <div className="assigned-small-metrics">
-              {assignedMetrics.map((metric) => (
-                <AssignedMetricCard key={metric.title} metric={metric} />
-              ))}
-            </div>
-            <StatusDonut />
-            <LeaderboardCard />
-          </section>
-
-          <section className="assigned-chart-grid">
-            <DistributionLineChart
-              title="Assigned Task Lexile Distribution"
-              icon={BookOpen}
-              data={lexileDistribution}
-              yMax={40}
-            />
-            <DistributionLineChart
-              title="Assigned Task Type Distribution"
-              icon={ListChecks}
-              data={typeDistribution}
-              tone="purple"
-              yMax={60}
-            />
-            <GenreDistributionCard />
+          <section
+            className="assigned-bento-grid"
+            data-expanded={expandedCardId ? "true" : "false"}
+            aria-label="Assigned task dashboard cards"
+          >
+            {assignedBentoCards.map((card) => (
+              <AssignedBentoCard
+                key={card.id}
+                card={card}
+                isExpanded={expandedCardId === card.id}
+                isAnyExpanded={expandedCardId !== null}
+                onToggle={() => setExpandedCardId((currentId) => (currentId === card.id ? null : card.id))}
+              />
+            ))}
           </section>
         </CardContent>
       </Card>
