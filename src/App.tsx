@@ -1,18 +1,25 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import {
+  AlertTriangle,
   AudioLines,
+  Bell,
   BookOpen,
   CalendarDays,
   CheckCircle2,
+  ChevronRight,
   CircleAlert,
+  ClipboardPlus,
   FileText,
   LibraryBig,
+  ListChecks,
+  MessageCircle,
   MessageSquareText,
   Mic,
   MonitorPlay,
   Search,
   Send,
   SlidersHorizontal,
+  Trophy,
   UsersRound,
   X,
 } from "lucide-react";
@@ -1034,113 +1041,438 @@ function StudentDirectoryCard({ student }: { student: StudentDirectoryEntry }) {
   );
 }
 
-function ClassView() {
-  const [classScope, setClassScope] = useState("All Classes");
-  const [studentQuery, setStudentQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [activeFilter, setActiveFilter] = useState("This Month");
+const taskPeriods = ["This Week (May 11 - May 17)", "Last Week", "This Month", "This Quarter"];
+const assignedClassScopes = ["All Classes", "Grade 5 Reading A", "Grade 6 Skills B", "Grade 4 Reading"];
 
-  const visibleStudents = useMemo(() => {
-    const normalizedQuery = studentQuery.trim().toLowerCase();
+const assignedMetrics = [
+  {
+    title: "Completion Rate",
+    value: "80%",
+    detail: "16 / 20 students",
+    icon: CheckCircle2,
+    tone: "green",
+    ring: 80,
+  },
+  {
+    title: "Tasks Assigned This Week",
+    value: "18",
+    detail: "Across 7 different tasks",
+    icon: CalendarDays,
+    tone: "purple",
+  },
+  {
+    title: "Waiting for Feedback",
+    value: "12",
+    detail: "Needs your review",
+    icon: MessageCircle,
+    tone: "amber",
+  },
+  {
+    title: "Overdue Tasks",
+    value: "3",
+    detail: "3 students affected",
+    icon: CircleAlert,
+    tone: "red",
+  },
+];
 
-    return studentDirectory.filter((student) => {
-      const matchesClass = classScope === "All Classes" || student.className === classScope;
-      const matchesStatus =
-        statusFilter === "All" ||
-        (statusFilter === "Needs support" && student.status === "support") ||
-        (statusFilter === "Active" && student.status !== "support");
-      const matchesQuery =
-        normalizedQuery.length === 0 ||
-        [student.name, student.id, student.className].join(" ").toLowerCase().includes(normalizedQuery);
+const taskStatusBreakdown = [
+  { label: "Completed", value: 80, percent: 59, color: "var(--primary)" },
+  { label: "In Progress", value: 28, percent: 21, color: "#f59e0b" },
+  { label: "Overdue", value: 12, percent: 9, color: "#ff2d55" },
+  { label: "Not Started", value: 16, percent: 12, color: "#e5e7eb" },
+];
 
-      return matchesClass && matchesStatus && matchesQuery;
-    });
-  }, [classScope, statusFilter, studentQuery]);
+const leaderboard = [
+  { rank: 1, name: "Aaliyah Johnson", avatar: "AJ", done: 8, total: 8, rate: 100, color: "#8b4b32" },
+  { rank: 2, name: "Ethan Kim", avatar: "EK", done: 6, total: 7, rate: 86, color: "#b36f3c" },
+  { rank: 3, name: "Mia Rodriguez", avatar: "MR", done: 6, total: 8, rate: 75, color: "#9a5038" },
+  { rank: 4, name: "Liam Chen", avatar: "LC", done: 5, total: 7, rate: 71, color: "#c47a3f" },
+  { rank: 5, name: "Sophia Patel", avatar: "SP", done: 4, total: 8, rate: 50, color: "#7d3f2e" },
+];
+
+const lexileDistribution = [
+  { label: "< 600L", value: 8 },
+  { label: "600L-800L", value: 20 },
+  { label: "800L-1000L", value: 34 },
+  { label: "1000L-1200L", value: 26 },
+  { label: "> 1200L", value: 12 },
+];
+
+const typeDistribution = [
+  { label: "Reading", value: 48 },
+  { label: "Writing", value: 36 },
+  { label: "Quiz", value: 24 },
+  { label: "Video", value: 16 },
+  { label: "Discussion", value: 12 },
+];
+
+const genreDistribution = [
+  { label: "Fiction", value: 46 },
+  { label: "Nonfiction", value: 38 },
+  { label: "Poetry", value: 18 },
+  { label: "Biography", value: 16 },
+  { label: "Informational", value: 18 },
+];
+
+function CompletionRing({ value }: { value: number }) {
+  return (
+    <span
+      className="completion-ring"
+      style={{ "--ring-value": `${value}%` } as CSSProperties}
+      aria-label={`${value}% completion`}
+    />
+  );
+}
+
+function AssignedMetricCard({ metric }: { metric: (typeof assignedMetrics)[number] }) {
+  const Icon = metric.icon;
 
   return (
-    <main className="workspace student-dashboard">
-      <section className="student-summary-grid">
-        <StudentOverviewCard tone="green" title="Total Students" primary="82 students" secondary="4 classes" />
-        <StudentOverviewCard tone="purple" title="Assigned Tasks" primary="27 active" secondary="64 total this month" />
-        <StudentOverviewCard tone="amber" title="Lexile / AR" primary="820L" secondary="Avg. AR 4.2" />
-        <StudentOverviewCard tone="pink" title="Reading Time / Words" primary="18h 42m" secondary="245,680 words" />
-      </section>
+    <Card className="assigned-metric-card" data-tone={metric.tone}>
+      <CardContent>
+        <div className="metric-visual" aria-hidden="true">
+          {metric.ring ? <CompletionRing value={metric.ring} /> : <Icon size={34} strokeWidth={2.35} />}
+        </div>
+        <div>
+          <p>{metric.title}</p>
+          <strong>{metric.value}</strong>
+          <span>{metric.detail}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-      <Card className="student-filter-card">
+function StatusDonut() {
+  return (
+    <Card className="task-status-card">
+      <CardHeader>
+        <CardTitle>Task Status Breakdown</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="task-status-layout">
+          <div className="status-donut" aria-label="Task status chart">
+            <div>
+              <span>Total</span>
+              <strong>136</strong>
+              <span>Tasks</span>
+            </div>
+          </div>
+          <div className="status-legend">
+            {taskStatusBreakdown.map((item) => (
+              <div key={item.label}>
+                <i style={{ backgroundColor: item.color }} />
+                <span>{item.label}</span>
+                <strong>
+                  {item.value} ({item.percent}%)
+                </strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button variant="outline" className="status-detail-button">
+          View task status details
+          <ChevronRight size={20} />
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+function LeaderboardCard() {
+  return (
+    <Card className="leaderboard-card">
+      <CardHeader>
+        <CardTitle>
+          <Trophy size={24} />
+          Student Completion Leaderboard
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="leaderboard-head">
+          <span>#</span>
+          <span>Student</span>
+          <span>Completed / Assigned</span>
+          <span>Completion Rate</span>
+        </div>
+        <div className="leaderboard-list">
+          {leaderboard.map((student) => (
+            <div className="leaderboard-row" key={student.name}>
+              <Badge variant="secondary" className="rank-badge" data-rank={student.rank}>
+                {student.rank}
+              </Badge>
+              <div className="leaderboard-student">
+                <span className="leaderboard-avatar" style={{ backgroundColor: student.color }}>
+                  {student.avatar}
+                </span>
+                <strong>{student.name}</strong>
+              </div>
+              <span>
+                {student.done} / {student.total}
+              </span>
+              <div className="leaderboard-rate">
+                <span className="progress-track">
+                  <i style={{ width: `${student.rate}%` }} />
+                </span>
+                <strong>{student.rate}%</strong>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DistributionLineChart({
+  title,
+  icon,
+  data,
+  tone = "green",
+  yMax,
+}: {
+  title: string;
+  icon: typeof BookOpen;
+  data: Array<{ label: string; value: number }>;
+  tone?: "green" | "purple";
+  yMax: number;
+}) {
+  const Icon = icon;
+  const width = 420;
+  const height = 210;
+  const padding = { top: 22, right: 18, bottom: 46, left: 44 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const points = data.map((item, index) => {
+    const x = padding.left + (chartWidth / (data.length - 1)) * index;
+    const y = padding.top + chartHeight - (item.value / yMax) * chartHeight;
+    return { ...item, x, y };
+  });
+  const pointString = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const areaString = `${padding.left},${height - padding.bottom} ${pointString} ${width - padding.right},${height - padding.bottom}`;
+  const gridLines = [0, 15, 30, 45, 60].filter((value) => value <= yMax);
+
+  return (
+    <Card className="distribution-card" data-tone={tone}>
+      <CardHeader>
+        <CardTitle>
+          <Icon size={21} />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <svg className="line-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title}>
+          <text x="0" y="18" className="chart-axis-title">
+            Tasks
+          </text>
+          {gridLines.map((tick) => {
+            const y = padding.top + chartHeight - (tick / yMax) * chartHeight;
+            return (
+              <g key={tick}>
+                <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} className="chart-grid-line" />
+                <text x="18" y={y + 5} className="chart-tick">
+                  {tick}
+                </text>
+              </g>
+            );
+          })}
+          <polygon points={areaString} className="chart-area" />
+          <polyline points={pointString} className="chart-line" />
+          {points.map((point) => (
+            <g key={point.label}>
+              <circle cx={point.x} cy={point.y} r="5" className="chart-point" />
+              <text x={point.x} y={point.y - 12} textAnchor="middle" className="chart-value">
+                {point.value}
+              </text>
+              <text x={point.x} y={height - 18} textAnchor="middle" className="chart-label">
+                {point.label}
+              </text>
+            </g>
+          ))}
+          <text x={width / 2} y={height - 2} textAnchor="middle" className="chart-x-title">
+            {tone === "green" ? "Lexile Range" : "Task Type"}
+          </text>
+        </svg>
+      </CardContent>
+    </Card>
+  );
+}
+
+function GenreDistributionCard() {
+  const max = Math.max(...genreDistribution.map((item) => item.value));
+
+  return (
+    <Card className="distribution-card genre-distribution-card">
+      <CardHeader>
+        <CardTitle>
+          <BookOpen size={21} />
+          Assigned Task Genre Distribution
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="bar-chart" role="img" aria-label="Assigned Task Genre Distribution">
+          <span className="bar-axis-title">Tasks</span>
+          <div className="bar-grid" aria-hidden="true">
+            {[60, 45, 30, 15, 0].map((tick) => (
+              <span key={tick}>{tick}</span>
+            ))}
+          </div>
+          <div className="bar-list">
+            {genreDistribution.map((item) => (
+              <div className="bar-item" key={item.label}>
+                <strong>{item.value}</strong>
+                <i style={{ height: `${Math.max(12, (item.value / max) * 100)}%` }} />
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+          <span className="bar-x-title">Genre</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ClassView() {
+  const [taskPeriod, setTaskPeriod] = useState(taskPeriods[0]);
+  const [classScope, setClassScope] = useState(assignedClassScopes[0]);
+
+  return (
+    <main className="workspace assigned-dashboard">
+      <aside className="assigned-sidebar" aria-label="Assigned task actions">
+        <Card className="assign-hero-card">
+          <CardContent>
+            <span className="assign-hero-icon">
+              <ClipboardPlus size={46} />
+            </span>
+            <div>
+              <CardTitle>Assign Task</CardTitle>
+              <CardDescription>Choose content and assign to students in a few simple steps.</CardDescription>
+            </div>
+            <Button variant="secondary" size="lg" className="assign-new-task-button">
+              Assign New Task
+              <ChevronRight size={22} />
+            </Button>
+            <BookOpen className="assign-hero-watermark" size={150} strokeWidth={1.65} aria-hidden="true" />
+          </CardContent>
+        </Card>
+
+        <Card className="feedback-summary-card">
+          <CardContent>
+            <div className="feedback-heading">
+              <span>
+                <MessageSquareText size={30} />
+              </span>
+              <div>
+                <CardTitle>Feedback</CardTitle>
+                <CardDescription>Review and provide feedback to help students improve and stay on track.</CardDescription>
+              </div>
+            </div>
+            <div className="feedback-action-grid">
+              <Button variant="outline" className="feedback-action-button">
+                <UsersRound size={30} />
+                <span>
+                  <strong>Whole Class</strong>
+                  <small>Review all pending feedback</small>
+                </span>
+              </Button>
+              <Button variant="outline" className="feedback-action-button">
+                <UsersRound size={30} />
+                <span>
+                  <strong>Single Student</strong>
+                  <small>View all tasks for one student</small>
+                </span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="assigned-notice-card" data-tone="alert">
+          <CardContent>
+            <AlertTriangle size={42} />
+            <div>
+              <CardTitle>Attention Needed</CardTitle>
+              <CardDescription>3 students have overdue tasks</CardDescription>
+            </div>
+            <ChevronRight size={24} />
+          </CardContent>
+        </Card>
+
+        <Card className="assigned-notice-card" data-tone="reminder">
+          <CardContent>
+            <Bell size={42} />
+            <div>
+              <CardTitle>Reminder</CardTitle>
+              <CardDescription>You have 12 submissions waiting for feedback.</CardDescription>
+            </div>
+            <ChevronRight size={24} />
+          </CardContent>
+        </Card>
+      </aside>
+
+      <Card className="assigned-main-panel">
         <CardContent>
-          <label className="student-filter-control">
-            <span>Class Scope</span>
+          <div className="assigned-toolbar">
+            <Select value={taskPeriod} onValueChange={(value) => value && setTaskPeriod(value)}>
+              <SelectTrigger className="assigned-select-trigger">
+                <CalendarDays size={20} />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {taskPeriods.map((period) => (
+                  <SelectItem key={period} value={period}>
+                    {period}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={classScope} onValueChange={(value) => value && setClassScope(value)}>
-              <SelectTrigger>
+              <SelectTrigger className="assigned-select-trigger compact">
+                <UsersRound size={20} />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {classScopeOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
+                {assignedClassScopes.map((scope) => (
+                  <SelectItem key={scope} value={scope}>
+                    {scope}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </label>
+          </div>
 
-          <label className="student-search-control">
-            <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={studentQuery}
-              onChange={(event) => setStudentQuery(event.target.value)}
-              placeholder="Search students by name or ID..."
+          <section className="assigned-top-grid">
+            <div className="assigned-small-metrics">
+              {assignedMetrics.map((metric) => (
+                <AssignedMetricCard key={metric.title} metric={metric} />
+              ))}
+            </div>
+            <StatusDonut />
+            <LeaderboardCard />
+          </section>
+
+          <section className="assigned-chart-grid">
+            <DistributionLineChart
+              title="Assigned Task Lexile Distribution"
+              icon={BookOpen}
+              data={lexileDistribution}
+              yMax={40}
             />
-          </label>
-
-          <label className="student-filter-control compact">
-            <span>Status</span>
-            <Select value={statusFilter} onValueChange={(value) => value && setStatusFilter(value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {studentStatusOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-
-          <label className="student-filter-control compact">
-            <span>Active</span>
-            <Select value={activeFilter} onValueChange={(value) => value && setActiveFilter(value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {["This Month", "This Week", "Today"].map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-
-          <Button variant="outline" onClick={() => {
-            setClassScope("All Classes");
-            setStudentQuery("");
-            setStatusFilter("All");
-            setActiveFilter("This Month");
-          }}>
-            Clear
-          </Button>
+            <DistributionLineChart
+              title="Assigned Task Type Distribution"
+              icon={ListChecks}
+              data={typeDistribution}
+              tone="purple"
+              yMax={60}
+            />
+            <GenreDistributionCard />
+          </section>
         </CardContent>
       </Card>
-
-      <section className="student-directory-grid">
-        {visibleStudents.map((student) => (
-          <StudentDirectoryCard key={student.id} student={student} />
-        ))}
-      </section>
     </main>
   );
 }
