@@ -46,6 +46,7 @@ const riskCopy = {
 
 type ClassMetricKey = "lexile" | "time" | "words";
 type PeriodKey = "week" | "month" | "ytd";
+type MyClassSection = "students" | "assigned" | "lexile" | "reading";
 
 const classMetricOptions: Array<{ key: ClassMetricKey; label: string }> = [
   { key: "lexile", label: "Lexile Level" },
@@ -1115,6 +1116,86 @@ const genreDistribution = [
   { label: "Informational", value: 18 },
 ];
 
+const myClassSections: Array<{
+  key: MyClassSection;
+  title: string;
+  primary: string;
+  secondary: string;
+  detail: string;
+  icon: typeof BookOpen;
+  tone: "green" | "purple" | "amber" | "pink";
+}> = [
+  {
+    key: "students",
+    title: "Total Students",
+    primary: "82 students",
+    secondary: "4 classes",
+    detail: "",
+    icon: UsersRound,
+    tone: "green",
+  },
+  {
+    key: "assigned",
+    title: "Assigned Tasks",
+    primary: "27 active",
+    secondary: "64 total this month",
+    detail: "",
+    icon: ClipboardPlus,
+    tone: "purple",
+  },
+  {
+    key: "lexile",
+    title: "Lexile / AR",
+    primary: "820L",
+    secondary: "Avg. Lexile",
+    detail: "Avg. AR 4.2",
+    icon: ListChecks,
+    tone: "amber",
+  },
+  {
+    key: "reading",
+    title: "Reading Time / Words",
+    primary: "18h 42m",
+    secondary: "245,680 words",
+    detail: "",
+    icon: BookOpen,
+    tone: "pink",
+  },
+];
+
+const lexileTrend = [
+  { label: "Jan", lexile: 680, ar: 3.2 },
+  { label: "Feb", lexile: 720, ar: 3.5 },
+  { label: "Mar", lexile: 780, ar: 3.9 },
+  { label: "Apr", lexile: 860, ar: 4.4 },
+  { label: "May", lexile: 930, ar: 4.8 },
+  { label: "Jun", lexile: 1000, ar: 5.1 },
+];
+
+const lexileClassDistribution = [
+  { label: "<600L", value: 6 },
+  { label: "600-800L", value: 18 },
+  { label: "800-1000L", value: 28 },
+  { label: "1000-1200L", value: 20 },
+  { label: ">1200L", value: 10 },
+];
+
+const arClassDistribution = [
+  { label: "1.0-2.0", value: 8 },
+  { label: "2.1-3.0", value: 16 },
+  { label: "3.1-4.0", value: 24 },
+  { label: "4.1-5.0", value: 20 },
+  { label: "5.1+", value: 14 },
+];
+
+const lexileLeaderboard = [
+  { rank: 1, name: "Sophia Patel", avatar: "SP", lexile: "1280L", ar: "6.2", trend: "+150L", color: "#8b4b32" },
+  { rank: 2, name: "Ethan Kim", avatar: "EK", lexile: "1180L", ar: "5.8", trend: "+190L", color: "#b36f3c" },
+  { rank: 3, name: "Mia Rodriguez", avatar: "MR", lexile: "1040L", ar: "5.4", trend: "+160L", color: "#9a5038" },
+  { rank: 4, name: "Aaliyah Johnson", avatar: "AJ", lexile: "1000L", ar: "5.1", trend: "+120L", color: "#c47a3f" },
+  { rank: 5, name: "Liam Chen", avatar: "LC", lexile: "960L", ar: "4.9", trend: "+110L", color: "#7d3f2e" },
+];
+
 function CompletionRing({ value }: { value: number }) {
   return (
     <span
@@ -1336,12 +1417,155 @@ function GenreDistributionCard() {
   );
 }
 
-function ClassView() {
+function MyClassSummaryCard({
+  section,
+  isActive,
+  onSelect,
+}: {
+  section: (typeof myClassSections)[number];
+  isActive: boolean;
+  onSelect: () => void;
+}) {
+  const Icon = section.icon;
+
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      className="myclass-summary-card"
+      data-tone={section.tone}
+      data-active={isActive}
+      onClick={onSelect}
+    >
+      <span className="myclass-summary-icon">
+        <Icon size={36} />
+      </span>
+      <span className="myclass-summary-copy">
+        <span>{section.title}</span>
+        <strong>{section.primary}</strong>
+        <small>
+          {section.secondary}
+          {section.detail && <em>{section.detail}</em>}
+        </small>
+      </span>
+      {isActive ? <CheckCircle2 className="myclass-summary-check" size={24} /> : <ChevronRight className="myclass-summary-arrow" size={24} />}
+    </Button>
+  );
+}
+
+function StudentSection() {
+  const [classScope, setClassScope] = useState("All Classes");
+  const [studentQuery, setStudentQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [activeFilter, setActiveFilter] = useState("This Month");
+
+  const visibleStudents = useMemo(() => {
+    const normalizedQuery = studentQuery.trim().toLowerCase();
+
+    return studentDirectory.filter((student) => {
+      const matchesClass = classScope === "All Classes" || student.className === classScope;
+      const matchesStatus =
+        statusFilter === "All" ||
+        (statusFilter === "Needs support" && student.status === "support") ||
+        (statusFilter === "Active" && student.status !== "support");
+      const matchesQuery =
+        normalizedQuery.length === 0 ||
+        [student.name, student.id, student.className].join(" ").toLowerCase().includes(normalizedQuery);
+
+      return matchesClass && matchesStatus && matchesQuery;
+    });
+  }, [classScope, statusFilter, studentQuery]);
+
+  return (
+    <section className="student-dashboard">
+      <Card className="student-filter-card">
+        <CardContent>
+          <label className="student-filter-control">
+            <span>Class Scope</span>
+            <Select value={classScope} onValueChange={(value) => value && setClassScope(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {classScopeOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
+
+          <label className="student-search-control">
+            <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={studentQuery}
+              onChange={(event) => setStudentQuery(event.target.value)}
+              placeholder="Search students by name or ID..."
+            />
+          </label>
+
+          <label className="student-filter-control compact">
+            <span>Status</span>
+            <Select value={statusFilter} onValueChange={(value) => value && setStatusFilter(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {studentStatusOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
+
+          <label className="student-filter-control compact">
+            <span>Active</span>
+            <Select value={activeFilter} onValueChange={(value) => value && setActiveFilter(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {["This Month", "This Week", "Today"].map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              setClassScope("All Classes");
+              setStudentQuery("");
+              setStatusFilter("All");
+              setActiveFilter("This Month");
+            }}
+          >
+            Clear
+          </Button>
+        </CardContent>
+      </Card>
+
+      <section className="student-directory-grid">
+        {visibleStudents.map((student) => (
+          <StudentDirectoryCard key={student.id} student={student} />
+        ))}
+      </section>
+    </section>
+  );
+}
+
+function AssignedTaskSection() {
   const [taskPeriod, setTaskPeriod] = useState(taskPeriods[0]);
   const [classScope, setClassScope] = useState(assignedClassScopes[0]);
 
   return (
-    <main className="workspace assigned-dashboard">
+    <section className="assigned-dashboard">
       <aside className="assigned-sidebar" aria-label="Assigned task actions">
         <Card className="assign-hero-card">
           <CardContent>
@@ -1473,6 +1697,394 @@ function ClassView() {
           </section>
         </CardContent>
       </Card>
+    </section>
+  );
+}
+
+function LexileTrendChart() {
+  const width = 720;
+  const height = 320;
+  const padding = { top: 34, right: 72, bottom: 46, left: 62 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const lexileToY = (value: number) => padding.top + chartHeight - ((value - 400) / 800) * chartHeight;
+  const arToY = (value: number) => padding.top + chartHeight - ((value - 1) / 5) * chartHeight;
+  const xFor = (index: number) => padding.left + (chartWidth / (lexileTrend.length - 1)) * index;
+  const lexilePoints = lexileTrend.map((item, index) => `${xFor(index)},${lexileToY(item.lexile)}`).join(" ");
+  const arPoints = lexileTrend.map((item, index) => `${xFor(index)},${arToY(item.ar)}`).join(" ");
+
+  return (
+    <Card className="lexile-trend-card">
+      <CardHeader>
+        <CardTitle>
+          <ListChecks size={22} />
+          Student Lexile / AR Trend
+        </CardTitle>
+        <CardAction>
+          <Select defaultValue="Aaliyah Johnson">
+            <SelectTrigger className="lexile-student-select">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {["Aaliyah Johnson", "Sophia Patel", "Ethan Kim", "Mia Rodriguez"].map((name) => (
+                <SelectItem key={name} value={name}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <div className="lexile-chart-legend">
+          <span data-tone="green">Lexile (L)</span>
+          <span data-tone="purple">AR Level</span>
+        </div>
+        <svg className="lexile-trend-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Student Lexile and AR trend">
+          <text x="10" y="24" className="chart-axis-title">
+            Lexile (L)
+          </text>
+          <text x={width - 68} y="24" className="chart-axis-title">
+            AR Level
+          </text>
+          {[400, 600, 800, 1000, 1200].map((tick) => {
+            const y = lexileToY(tick);
+            return (
+              <g key={tick}>
+                <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} className="chart-grid-line" />
+                <text x="24" y={y + 5} className="chart-tick">
+                  {tick}
+                </text>
+              </g>
+            );
+          })}
+          {[0, 1, 2, 3, 4, 5, 6].map((tick) => {
+            const y = tick === 0 ? lexileToY(400) : arToY(tick);
+            return (
+              <text key={tick} x={width - 44} y={y + 5} className="chart-tick">
+                {tick === 0 ? "0" : `${tick}.0`}
+              </text>
+            );
+          })}
+          <polyline points={lexilePoints} className="lexile-line" />
+          <polyline points={arPoints} className="ar-line" />
+          {lexileTrend.map((point, index) => {
+            const x = xFor(index);
+            return (
+              <g key={point.label}>
+                <circle cx={x} cy={lexileToY(point.lexile)} r="6" className="lexile-point" />
+                <text x={x} y={lexileToY(point.lexile) - 14} textAnchor="middle" className="chart-value">
+                  {point.lexile}L
+                </text>
+                <circle cx={x} cy={arToY(point.ar)} r="6" className="ar-point" />
+                <text x={x} y={arToY(point.ar) + 28} textAnchor="middle" className="chart-value">
+                  {point.ar}
+                </text>
+                <text x={x} y={height - 16} textAnchor="middle" className="chart-label">
+                  {point.label}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LexileFocusCard() {
+  return (
+    <Card className="lexile-focus-card">
+      <CardHeader>
+        <CardTitle>
+          <UsersRound size={22} />
+          Student Focus
+        </CardTitle>
+        <CardAction>
+          <Button variant="ghost" size="icon-sm" aria-label="Change student">
+            <ChevronRight size={18} />
+          </Button>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <div className="focus-student">
+          <span className="focus-avatar">AJ</span>
+          <div>
+            <h3>Aaliyah Johnson</h3>
+            <p>
+              ID: 10023 <Badge variant="secondary">Class 7A</Badge>
+            </p>
+          </div>
+        </div>
+        <Card className="focus-score-card">
+          <CardContent>
+            <div>
+              <span>Current Lexile</span>
+              <strong>1000L</strong>
+              <small>+120L this term</small>
+            </div>
+            <div>
+              <span>Current AR</span>
+              <strong>5.1</strong>
+              <small>+0.6 this term</small>
+            </div>
+          </CardContent>
+        </Card>
+        <div className="lexile-mode-row">
+          <Button>Lexile</Button>
+          <Button variant="outline">AR</Button>
+          <Button variant="outline">Both</Button>
+          <Select defaultValue="This Semester">
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {["This Semester", "This Month", "This Year"].map((period) => (
+                <SelectItem key={period} value={period}>
+                  {period}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LexileStatStrip() {
+  const stats = [
+    { label: "Class Avg. Lexile", value: "820L", detail: "+65L this term", icon: ListChecks, tone: "green" },
+    { label: "Class Avg. AR", value: "4.2", detail: "+0.4 this term", icon: BookOpen, tone: "purple" },
+    { label: "Highest Lexile", value: "1280L", detail: "Sophia Patel", icon: Trophy, tone: "amber" },
+    { label: "Fastest Growth", value: "+190L", detail: "Ethan Kim", icon: CheckCircle2, tone: "blue" },
+  ];
+
+  return (
+    <Card className="lexile-stat-strip">
+      <CardContent>
+        {stats.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div key={stat.label} data-tone={stat.tone}>
+              <span>
+                <Icon size={32} />
+              </span>
+              <p>{stat.label}</p>
+              <strong>{stat.value}</strong>
+              <small>{stat.detail}</small>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LexileSideInsights() {
+  return (
+    <div className="lexile-side-stack">
+      <Card className="reading-insights-card">
+        <CardHeader>
+          <CardTitle>
+            <CheckCircle2 size={22} />
+            Reading Insights
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {[
+            ["+85L", "Avg. Lexile growth this semester"],
+            ["78%", "Students on or above expected growth"],
+            ["8 students", "Need additional reading support"],
+          ].map(([value, label]) => (
+            <div key={value}>
+              <strong>{value}</strong>
+              <span>{label}</span>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card className="top-growth-card">
+        <CardHeader>
+          <CardTitle>
+            <ListChecks size={22} />
+            Top Growth (Lexile)
+          </CardTitle>
+          <CardAction>
+            <ChevronRight size={20} />
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          {[
+            ["1", "Ethan Kim", "+190L"],
+            ["2", "Mia Rodriguez", "+160L"],
+            ["3", "Liam Chen", "+140L"],
+          ].map(([rank, name, value]) => (
+            <div key={name}>
+              <Badge variant="secondary">{rank}</Badge>
+              <span className="leaderboard-avatar">{name.split(" ").map((part) => part[0]).join("")}</span>
+              <strong>{name}</strong>
+              <em>{value}</em>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ClassDistributionCard({
+  title,
+  subtitle,
+  data,
+  tone = "green",
+  xTitle,
+}: {
+  title: string;
+  subtitle: string;
+  data: Array<{ label: string; value: number }>;
+  tone?: "green" | "purple";
+  xTitle: string;
+}) {
+  const max = Math.max(...data.map((item) => item.value));
+
+  return (
+    <Card className="class-distribution-card" data-tone={tone}>
+      <CardHeader>
+        <CardTitle>
+          <ListChecks size={22} />
+          {title}
+        </CardTitle>
+        <CardDescription>{subtitle}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="class-bar-chart" role="img" aria-label={title}>
+          {data.map((item) => (
+            <div key={item.label}>
+              <strong>{item.value}</strong>
+              <i style={{ height: `${Math.max(10, (item.value / max) * 100)}%` }} />
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </div>
+        <p className="class-bar-axis">{xTitle}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LexileLeaderboardCard() {
+  return (
+    <Card className="lexile-leaderboard-card">
+      <CardHeader>
+        <CardTitle>
+          <Trophy size={22} />
+          Lexile / AR Leaderboard
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="lexile-leaderboard-head">
+          <span>#</span>
+          <span>Student</span>
+          <span>Lexile (L)</span>
+          <span>AR Level</span>
+          <span>Trend</span>
+        </div>
+        {lexileLeaderboard.map((student) => (
+          <div className="lexile-leaderboard-row" data-active={student.rank === 4} key={student.name}>
+            <Badge variant="secondary" className="rank-badge" data-rank={student.rank}>
+              {student.rank}
+            </Badge>
+            <div className="leaderboard-student">
+              <span className="leaderboard-avatar" style={{ backgroundColor: student.color }}>
+                {student.avatar}
+              </span>
+              <strong>{student.name}</strong>
+            </div>
+            <span>{student.lexile}</span>
+            <span>{student.ar}</span>
+            <em>{student.trend}</em>
+          </div>
+        ))}
+      </CardContent>
+      <CardFooter>
+        <Button variant="ghost" className="status-detail-button">
+          View full leaderboard
+          <ChevronRight size={20} />
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+function LexileArSection() {
+  return (
+    <section className="lexile-dashboard">
+      <LexileSideInsights />
+      <div className="lexile-main-grid">
+        <div className="lexile-trend-row">
+          <LexileTrendChart />
+          <LexileStatStrip />
+        </div>
+        <div className="lexile-bottom-grid">
+          <ClassDistributionCard
+            title="Current Class Lexile Distribution"
+            subtitle="82 students"
+            data={lexileClassDistribution}
+            xTitle="Lexile Range"
+          />
+          <ClassDistributionCard
+            title="Current Class AR Distribution"
+            subtitle="82 students"
+            data={arClassDistribution}
+            tone="purple"
+            xTitle="AR Level (ATOS)"
+          />
+          <LexileLeaderboardCard />
+        </div>
+      </div>
+      <LexileFocusCard />
+    </section>
+  );
+}
+
+function ReadingTimeSection() {
+  return (
+    <section className="student-dashboard">
+      <Card className="reading-placeholder-card">
+        <CardHeader>
+          <CardTitle>Reading Time / Words</CardTitle>
+          <CardDescription>Reading activity content area is ready for the next module.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p>18h 42m tracked this week with 245,680 total words.</p>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+function ClassView() {
+  const [activeSection, setActiveSection] = useState<MyClassSection>("students");
+
+  return (
+    <main className="workspace myclass-workspace">
+      <section className="myclass-summary-grid" aria-label="MyClass sections">
+        {myClassSections.map((section) => (
+          <MyClassSummaryCard
+            key={section.key}
+            section={section}
+            isActive={activeSection === section.key}
+            onSelect={() => setActiveSection(section.key)}
+          />
+        ))}
+      </section>
+
+      {activeSection === "students" && <StudentSection />}
+      {activeSection === "assigned" && <AssignedTaskSection />}
+      {activeSection === "lexile" && <LexileArSection />}
+      {activeSection === "reading" && <ReadingTimeSection />}
     </main>
   );
 }

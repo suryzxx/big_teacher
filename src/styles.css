@@ -1248,12 +1248,114 @@ h1 {
   border-radius: 999px;
 }
 
+.myclass-workspace {
+  display: grid;
+  gap: 22px;
+  padding-inline: 18px;
+}
+
+.myclass-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.myclass-summary-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  height: 150px;
+  border-radius: var(--radius-2xl);
+  padding: 22px;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 6px 20px rgb(15 23 42 / 5%);
+}
+
+.myclass-summary-card[data-active="true"] {
+  border-color: var(--primary);
+  box-shadow:
+    0 0 0 2px color-mix(in oklch, var(--primary) 70%, transparent),
+    0 10px 24px rgb(15 23 42 / 8%);
+}
+
+.myclass-summary-icon {
+  display: grid;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  border-radius: 999px;
+  color: var(--primary);
+  background: color-mix(in oklch, var(--primary) 12%, var(--card));
+}
+
+.myclass-summary-card[data-tone="purple"] .myclass-summary-icon {
+  color: #7c3aed;
+  background: color-mix(in oklch, #7c3aed 13%, var(--card));
+}
+
+.myclass-summary-card[data-tone="amber"] .myclass-summary-icon {
+  color: #f59e0b;
+  background: color-mix(in oklch, #f59e0b 13%, var(--card));
+}
+
+.myclass-summary-card[data-tone="pink"] .myclass-summary-icon {
+  color: #ff2d55;
+  background: color-mix(in oklch, #ff2d55 11%, var(--card));
+}
+
+.myclass-summary-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.myclass-summary-copy > span {
+  color: var(--foreground);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.myclass-summary-copy strong {
+  color: var(--foreground);
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.myclass-summary-copy small {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 760;
+}
+
+.myclass-summary-copy em {
+  color: var(--foreground);
+  font-style: normal;
+  font-weight: 850;
+}
+
+.myclass-summary-check {
+  align-self: start;
+  color: var(--primary);
+}
+
+.myclass-summary-arrow {
+  color: var(--muted-foreground);
+}
+
 .assigned-dashboard {
   display: grid;
   grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
   gap: 22px;
   align-items: stretch;
-  padding-inline: 18px;
 }
 
 .assigned-sidebar {
@@ -1895,11 +1997,465 @@ h1 {
   justify-self: center;
 }
 
+.lexile-dashboard {
+  display: grid;
+  grid-template-areas:
+    "focus main"
+    "side main";
+  grid-template-columns: 390px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.lexile-focus-card {
+  grid-area: focus;
+}
+
+.lexile-side-stack {
+  display: grid;
+  grid-area: side;
+  gap: 18px;
+}
+
+.lexile-main-grid {
+  display: grid;
+  grid-area: main;
+  gap: 18px;
+}
+
+.lexile-focus-card,
+.reading-insights-card,
+.top-growth-card,
+.lexile-trend-card,
+.lexile-stat-strip,
+.class-distribution-card,
+.lexile-leaderboard-card,
+.reading-placeholder-card {
+  box-shadow: 0 6px 20px rgb(15 23 42 / 5%);
+}
+
+.lexile-focus-card [data-slot="card-title"],
+.reading-insights-card [data-slot="card-title"],
+.top-growth-card [data-slot="card-title"],
+.lexile-trend-card [data-slot="card-title"],
+.class-distribution-card [data-slot="card-title"],
+.lexile-leaderboard-card [data-slot="card-title"] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.lexile-focus-card [data-slot="card-title"] svg,
+.reading-insights-card [data-slot="card-title"] svg,
+.top-growth-card [data-slot="card-title"] svg,
+.lexile-trend-card [data-slot="card-title"] svg,
+.class-distribution-card [data-slot="card-title"] svg,
+.lexile-leaderboard-card [data-slot="card-title"] svg {
+  color: var(--primary);
+}
+
+.lexile-focus-card > [data-slot="card-content"] {
+  display: grid;
+  gap: 16px;
+}
+
+.focus-student {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+}
+
+.focus-avatar {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border: 4px solid color-mix(in oklch, var(--primary) 32%, var(--card));
+  border-radius: 999px;
+  background: linear-gradient(135deg, #9a5038, #d28a4f);
+  color: white;
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.focus-student h3 {
+  margin: 0 0 8px;
+  color: var(--foreground);
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.focus-student p {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  font-weight: 780;
+}
+
+.focus-score-card {
+  box-shadow: none;
+}
+
+.focus-score-card > [data-slot="card-content"] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 16px;
+}
+
+.focus-score-card [data-slot="card-content"] > div {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+}
+
+.focus-score-card [data-slot="card-content"] > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.focus-score-card span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.focus-score-card strong {
+  color: var(--primary);
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.focus-score-card div + div strong {
+  color: #7c3aed;
+}
+
+.focus-score-card small {
+  color: color-mix(in oklch, var(--primary) 84%, var(--foreground));
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.lexile-mode-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr minmax(140px, 1.35fr);
+  gap: 10px;
+}
+
+.lexile-mode-row [data-slot="button"],
+.lexile-mode-row [data-slot="select-trigger"] {
+  height: 42px;
+}
+
+.reading-insights-card > [data-slot="card-content"] {
+  display: grid;
+  gap: 18px;
+}
+
+.reading-insights-card [data-slot="card-content"] > div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.reading-insights-card strong {
+  color: var(--primary);
+  font-size: 24px;
+  font-weight: 950;
+}
+
+.reading-insights-card span {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 760;
+}
+
+.top-growth-card > [data-slot="card-content"] {
+  display: grid;
+  gap: 13px;
+}
+
+.top-growth-card [data-slot="card-content"] > div {
+  display: grid;
+  grid-template-columns: 28px 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.top-growth-card strong {
+  color: var(--foreground);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.top-growth-card em {
+  color: var(--primary);
+  font-style: normal;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.lexile-trend-row {
+  display: grid;
+  grid-template-columns: minmax(560px, 1.65fr) minmax(420px, 1fr);
+  gap: 18px;
+}
+
+.lexile-trend-card > [data-slot="card-header"] {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.lexile-student-select {
+  width: 230px;
+}
+
+.lexile-chart-legend {
+  display: flex;
+  justify-content: flex-end;
+  gap: 34px;
+  margin: -6px 0 4px;
+}
+
+.lexile-chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.lexile-chart-legend span::before {
+  content: "";
+  width: 28px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+.lexile-chart-legend span[data-tone="purple"]::before {
+  background: #8b5cf6;
+}
+
+.lexile-trend-chart {
+  display: block;
+  width: 100%;
+  min-height: 300px;
+}
+
+.lexile-line,
+.ar-line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lexile-line {
+  stroke: var(--primary);
+}
+
+.ar-line {
+  stroke: #8b5cf6;
+}
+
+.lexile-point,
+.ar-point {
+  stroke: var(--card);
+  stroke-width: 3;
+}
+
+.lexile-point {
+  fill: var(--primary);
+}
+
+.ar-point {
+  fill: #8b5cf6;
+}
+
+.lexile-stat-strip > [data-slot="card-content"] {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  height: 100%;
+  padding: 0;
+}
+
+.lexile-stat-strip [data-slot="card-content"] > div {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 34px 22px;
+  text-align: center;
+}
+
+.lexile-stat-strip [data-slot="card-content"] > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.lexile-stat-strip [data-slot="card-content"] > div > span {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 999px;
+  color: var(--primary);
+  background: color-mix(in oklch, var(--primary) 12%, var(--card));
+}
+
+.lexile-stat-strip [data-tone="purple"] > span {
+  color: #7c3aed;
+  background: color-mix(in oklch, #7c3aed 12%, var(--card));
+}
+
+.lexile-stat-strip [data-tone="amber"] > span {
+  color: #f59e0b;
+  background: color-mix(in oklch, #f59e0b 12%, var(--card));
+}
+
+.lexile-stat-strip [data-tone="blue"] > span {
+  color: #0ea5e9;
+  background: color-mix(in oklch, #0ea5e9 12%, var(--card));
+}
+
+.lexile-stat-strip p {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.lexile-stat-strip strong {
+  color: var(--foreground);
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 950;
+}
+
+.lexile-stat-strip small {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.lexile-bottom-grid {
+  display: grid;
+  grid-template-columns: minmax(330px, 1fr) minmax(330px, 1fr) minmax(480px, 1.45fr);
+  gap: 18px;
+}
+
+.class-distribution-card [data-slot="card-description"] {
+  margin-top: -8px;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.class-bar-chart {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: end;
+  gap: 18px;
+  min-height: 220px;
+  border-bottom: 1px solid var(--border);
+  background: repeating-linear-gradient(to bottom, transparent 0 45px, var(--border) 46px 47px);
+}
+
+.class-bar-chart > div {
+  display: grid;
+  grid-template-rows: 24px 1fr 34px;
+  justify-items: center;
+  align-items: end;
+  height: 100%;
+  min-width: 0;
+}
+
+.class-bar-chart strong {
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.class-bar-chart i {
+  width: min(48px, 72%);
+  border-radius: 6px 6px 0 0;
+  background: var(--primary);
+}
+
+.class-distribution-card[data-tone="purple"] .class-bar-chart i {
+  background: #7c3aed;
+}
+
+.class-bar-chart span {
+  overflow: hidden;
+  width: 100%;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 740;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.class-bar-axis {
+  margin: 12px 0 0;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.lexile-leaderboard-head,
+.lexile-leaderboard-row {
+  display: grid;
+  grid-template-columns: 42px minmax(160px, 1fr) minmax(90px, 0.55fr) minmax(80px, 0.48fr) minmax(88px, 0.52fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.lexile-leaderboard-head {
+  margin-bottom: 12px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.lexile-leaderboard-row {
+  min-height: 52px;
+  border-top: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 820;
+}
+
+.lexile-leaderboard-row[data-active="true"] {
+  margin-inline: -8px;
+  border-radius: var(--radius-xl);
+  padding-inline: 8px;
+  background: color-mix(in oklch, var(--primary) 9%, var(--card));
+}
+
+.lexile-leaderboard-row em {
+  color: var(--primary);
+  font-style: normal;
+  font-weight: 950;
+}
+
+.reading-placeholder-card {
+  max-width: 720px;
+}
+
 @media (max-width: 1500px) {
   .resource-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .myclass-summary-grid,
   .student-summary-grid,
   .student-directory-grid,
   .assigned-chart-grid {
@@ -1918,6 +2474,23 @@ h1 {
   .assigned-sidebar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .lexile-dashboard {
+    grid-template-areas:
+      "focus"
+      "main"
+      "side";
+    grid-template-columns: 1fr;
+  }
+
+  .lexile-side-stack,
+  .lexile-bottom-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lexile-leaderboard-card {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 1180px) {
@@ -1935,10 +2508,14 @@ h1 {
   .class-layout,
   .task-completion-grid,
   .insight-strip,
+  .myclass-summary-grid,
   .student-summary-grid,
   .student-directory-grid,
   .assigned-sidebar,
-  .assigned-chart-grid {
+  .assigned-chart-grid,
+  .lexile-trend-row,
+  .lexile-side-stack,
+  .lexile-bottom-grid {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -1987,18 +2564,34 @@ h1 {
   .class-layout,
   .task-completion-grid,
   .insight-strip,
+  .myclass-summary-grid,
   .student-summary-grid,
   .student-directory-grid,
   .student-filter-card > [data-slot="card-content"],
   .assigned-sidebar,
   .assigned-small-metrics,
   .assigned-chart-grid,
-  .task-status-layout {
+  .task-status-layout,
+  .lexile-trend-row,
+  .lexile-side-stack,
+  .lexile-bottom-grid,
+  .lexile-stat-strip > [data-slot="card-content"],
+  .lexile-mode-row {
     grid-template-columns: 1fr;
   }
 
   .assigned-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .myclass-workspace {
     padding-inline: 0;
+  }
+
+  .myclass-summary-card {
+    grid-template-columns: 76px minmax(0, 1fr) 28px;
+    height: auto;
+    min-height: 128px;
   }
 
   .assigned-select-trigger,
@@ -2017,6 +2610,19 @@ h1 {
 
   .leaderboard-row > span:nth-child(3),
   .leaderboard-rate {
+    grid-column: 2;
+  }
+
+  .lexile-leaderboard-head {
+    display: none;
+  }
+
+  .lexile-leaderboard-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .lexile-leaderboard-row > span,
+  .lexile-leaderboard-row > em {
     grid-column: 2;
   }
 
