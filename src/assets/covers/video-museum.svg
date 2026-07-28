@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" viewBox="0 0 720 460" role="img" aria-labelledby="title">
+  <title id="title">Museum mystery video cover</title>
+  <rect width="720" height="460" fill="#ead6c4"/>
+  <path d="M76 108h568v296H76z" fill="#6a5067"/>
+  <rect x="128" y="154" width="150" height="188" rx="4" fill="#f2c48e"/>
+  <rect x="328" y="154" width="264" height="188" rx="4" fill="#f2c48e"/>
+  <circle cx="203" cy="248" r="56" fill="#806049"/>
+  <path d="M399 224l74 48 74-48v96H399z" fill="#7e9f8a"/>
+  <path d="M316 226l66 39-66 39z" fill="#ffffff" opacity=".9"/>
+  <path d="M102 404h516" stroke="#3d3140" stroke-width="18" stroke-linecap="round"/>
+</svg>

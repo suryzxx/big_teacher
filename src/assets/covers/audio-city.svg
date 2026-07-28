@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" viewBox="0 0 720 460" role="img" aria-labelledby="title">
+  <title id="title">City audio cover</title>
+  <rect width="720" height="460" fill="#d7edf0"/>
+  <path d="M0 326h720v134H0z" fill="#2d3e50"/>
+  <path d="M70 160h80v166H70zm112-55h96v221h-96zm132 88h74v133h-74zm110-72h118v205H424zm148 40h78v165h-78z" fill="#517998"/>
+  <path d="M104 199h20m88-54h24m80 94h18m148-74h26m96 42h20" stroke="#f5df8f" stroke-width="16" stroke-linecap="round"/>
+  <path d="M220 382c34-84 66-84 100 0s66 84 100 0 66-84 100 0" fill="none" stroke="#86d8c6" stroke-width="20" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" viewBox="0 0 720 460" role="img" aria-labelledby="title">
+  <title id="title">Space diary ebook cover</title>
+  <rect width="720" height="460" fill="#18243f"/>
+  <circle cx="558" cy="130" r="78" fill="#d8e3ff"/>
+  <circle cx="520" cy="108" r="14" fill="#b9c7e7"/>
+  <circle cx="590" cy="154" r="20" fill="#b9c7e7"/>
+  <path d="M108 348c106-74 224-111 354-111 65 0 125 9 180 27v196H108z" fill="#435b8f"/>
+  <path d="M138 126l50 30 51-30-51-31z" fill="#f3be6f"/>
+  <path d="M188 156v82" stroke="#f3be6f" stroke-width="12" stroke-linecap="round"/>
+  <path d="M174 251h30l18 82h-66z" fill="#ffffff"/>
+  <path d="M64 74h10m89-31h12m171 55h12m-67 85h8m338 54h10" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+</svg>

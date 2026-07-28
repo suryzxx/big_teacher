@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" viewBox="0 0 720 460" role="img" aria-labelledby="title">
+  <title id="title">Market reading cover</title>
+  <rect width="720" height="460" fill="#f2dec4"/>
+  <path d="M70 188h580v272H70z" fill="#d9705e"/>
+  <path d="M70 188l58-86h464l58 86z" fill="#f4c36c"/>
+  <path d="M124 102v86m116-86v86m116-86v86m116-86v86m116-86v86" stroke="#a7433d" stroke-width="12"/>
+  <rect x="126" y="252" width="160" height="124" rx="18" fill="#fff3da"/>
+  <rect x="328" y="252" width="266" height="124" rx="18" fill="#fff3da"/>
+  <circle cx="178" cy="308" r="28" fill="#6a9f69"/>
+  <circle cx="230" cy="315" r="30" fill="#d65f51"/>
+  <path d="M376 303h166m-166 42h116" stroke="#8b5f40" stroke-width="20" stroke-linecap="round"/>
+</svg>

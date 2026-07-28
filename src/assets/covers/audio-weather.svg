@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" viewBox="0 0 720 460" role="img" aria-labelledby="title">
+  <title id="title">Weather audio cover</title>
+  <rect width="720" height="460" fill="#dfeef6"/>
+  <path d="M0 340c78-50 158-67 240-52 80 15 142 6 188-27 69-50 166-47 292 9v190H0z" fill="#6b95ad"/>
+  <path d="M198 198c-4-52 28-94 78-103 31-49 106-42 128 15 50 3 86 39 86 84 0 49-39 88-88 88H270c-40 0-72-35-72-84z" fill="#ffffff"/>
+  <path d="M210 354c28-65 56-65 84 0s56 65 84 0 56-65 84 0 56 65 84 0" fill="none" stroke="#f5d77d" stroke-width="18" stroke-linecap="round"/>
+  <path d="M294 304l-24 58m92-58l-24 58m92-58l-24 58" stroke="#4b7f99" stroke-width="12" stroke-linecap="round"/>
+</svg>

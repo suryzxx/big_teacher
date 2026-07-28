@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="460" viewBox="0 0 720 460" role="img" aria-labelledby="title">
+  <title id="title">River reading cover</title>
+  <rect width="720" height="460" fill="#d9e5cf"/>
+  <path d="M0 275c90-58 168-74 234-49 64 24 116 20 156-12 42-34 97-47 164-38 59 8 114 31 166 68v216H0z" fill="#758c56"/>
+  <path d="M0 350c84-52 163-67 236-45 56 17 105 11 147-18 54-37 121-45 201-24 48 13 93 34 136 64v133H0z" fill="#4f7f77"/>
+  <path d="M0 384c92-40 169-45 232-15 62 29 116 24 162-16 51-45 119-54 204-28 47 15 88 36 122 63v72H0z" fill="#c7d5b0"/>
+  <path d="M108 230c28-50 70-80 126-91 45-9 85-3 120 18-80 11-161 35-246 73z" fill="#8baa67"/>
+</svg>
