@@ -2811,6 +2811,31 @@ h1 {
   max-width: 720px;
 }
 
+.myclass-workspace :where(
+  h1,
+  h2,
+  h3,
+  p,
+  span,
+  strong,
+  small,
+  em,
+  button,
+  label,
+  [data-slot="card-title"],
+  [data-slot="card-description"],
+  [data-slot="button"],
+  [data-slot="select-trigger"],
+  [data-slot="badge"]
+) {
+  font-weight: 400 !important;
+}
+
+.myclass-summary-copy strong {
+  font-family: "Nunito Variable", var(--font-sans);
+  font-weight: 500 !important;
+}
+
 @media (max-width: 1500px) {
   .resource-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
