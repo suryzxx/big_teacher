@@ -1,8 +1,6 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
-  AlertTriangle,
   AudioLines,
-  Bell,
   BookOpen,
   CalendarDays,
   CheckCircle2,
@@ -10,30 +8,36 @@ import {
   CircleAlert,
   ClipboardPlus,
   FileText,
+  MoreHorizontal,
   LibraryBig,
   ListChecks,
+  LogOut,
   MessageCircle,
   MessageSquareText,
   Mic,
   MonitorPlay,
   Search,
   Send,
+  RefreshCw,
   SlidersHorizontal,
   Trophy,
   UsersRound,
   X,
 } from "lucide-react";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { studentAvatarImages } from "./assets/mock/students";
 import { classes, resources } from "./data/mockData";
 import type { ClassRoom, Resource, ResourceGenre, ResourceType, Student } from "./types";
 
 const resourceIcons: Record<ResourceType, typeof BookOpen> = {
-  "E-book": BookOpen,
-  Audio: AudioLines,
+  Writing: BookOpen,
+  Podcast: AudioLines,
   Video: MonitorPlay,
   Reading: FileText,
 };
@@ -46,7 +50,7 @@ const riskCopy = {
 
 type ClassMetricKey = "lexile" | "time" | "words";
 type PeriodKey = "week" | "month" | "ytd";
-type MyClassSection = "students" | "assigned" | "lexile" | "reading";
+type MyClassSection = "students" | "assigned" | "lexile";
 
 const classMetricOptions: Array<{ key: ClassMetricKey; label: string }> = [
   { key: "lexile", label: "Lexile Level" },
@@ -72,7 +76,7 @@ const genreOptions: Array<ResourceGenre | "All"> = [
   "Fantasy",
 ];
 
-const typeOptions: ResourceType[] = ["E-book", "Audio", "Video", "Reading"];
+const typeOptions: ResourceType[] = ["Writing", "Podcast", "Video", "Reading"];
 
 function average(values: number[]) {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
@@ -237,7 +241,7 @@ function AssignIcon() {
 }
 
 function TypeFilterIcon({ type }: { type: ResourceType }) {
-  if (type === "Audio") {
+  if (type === "Podcast") {
     return (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path
@@ -265,6 +269,17 @@ function TypeFilterIcon({ type }: { type: ResourceType }) {
         <path
           d="M16.19 2H7.81C4.17 2 2 4.17 2 7.81V16.18C2 19.83 4.17 22 7.81 22H16.18C19.82 22 21.99 19.83 21.99 16.19V7.81C22 4.17 19.83 2 16.19 2ZM11.5 17.25C11.5 17.61 11.14 17.85 10.81 17.71C9.6 17.19 8.02 16.71 6.92 16.57L6.73 16.55C6.12 16.47 5.62 15.9 5.62 15.28V7.58C5.62 6.81 6.24 6.24 7 6.3C8.25 6.4 10.1 7 11.26 7.66C11.42 7.75 11.5 7.92 11.5 8.09V17.25ZM18.38 15.27C18.38 15.89 17.88 16.46 17.27 16.54L17.06 16.56C15.97 16.71 14.4 17.18 13.19 17.69C12.86 17.83 12.5 17.59 12.5 17.23V8.08C12.5 7.9 12.59 7.73 12.75 7.64C13.91 6.99 15.72 6.41 16.95 6.3H16.99C17.76 6.3 18.38 6.92 18.38 7.69V15.27Z"
           fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  if (type === "Writing") {
+    return (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path
+          d="M16.19 2H7.81C4.17 2 2 4.17 2 7.81V16.18C2 19.83 4.17 22 7.81 22H16.18C19.82 22 21.99 19.83 21.99 16.19V7.81C22 4.17 19.83 2 16.19 2ZM10.95 17.51C10.66 17.8 10.11 18.08 9.71 18.14L7.25 18.49C7.16 18.5 7.07 18.51 6.98 18.51C6.57 18.51 6.19 18.37 5.92 18.1C5.59 17.77 5.45 17.29 5.53 16.76L5.88 14.3C5.94 13.89 6.21 13.35 6.51 13.06L10.97 8.6C11.05 8.81 11.13 9.02 11.24 9.26C11.34 9.47 11.45 9.69 11.57 9.89C11.67 10.06 11.78 10.22 11.87 10.34C11.98 10.51 12.11 10.67 12.19 10.76C12.24 10.83 12.28 10.88 12.3 10.9C12.55 11.2 12.84 11.48 13.09 11.69C13.16 11.76 13.2 11.8 13.22 11.81C13.37 11.93 13.52 12.05 13.65 12.14C13.81 12.26 13.97 12.37 14.14 12.46C14.34 12.58 14.56 12.69 14.78 12.8C15.01 12.9 15.22 12.99 15.43 13.06L10.95 17.51ZM17.37 11.09L16.45 12.02C16.39 12.08 16.31 12.11 16.23 12.11C16.2 12.11 16.16 12.11 16.14 12.1C14.11 11.52 12.49 9.9 11.91 7.87C11.88 7.76 11.91 7.64 11.99 7.57L12.92 6.64C14.44 5.12 15.89 5.15 17.38 6.64C18.14 7.4 18.51 8.13 18.51 8.89C18.5 9.61 18.13 10.33 17.37 11.09Z"
+          fill="#171717"
         />
       </svg>
     );
@@ -324,6 +339,7 @@ function AssignResourceDialog({
   selectedStudentIds,
   onClassChange,
   onStudentToggle,
+  onStudentSelectAll,
   onClose,
   onAssign,
 }: {
@@ -332,19 +348,35 @@ function AssignResourceDialog({
   selectedStudentIds: string[];
   onClassChange: (classId: string) => void;
   onStudentToggle: (studentId: string) => void;
+  onStudentSelectAll: (studentIds: string[]) => void;
   onClose: () => void;
   onAssign: () => void;
 }) {
-  const selectedClass = classes.find((classRoom) => classRoom.id === selectedClassId) ?? classes[0];
+  const [classMenuOpen, setClassMenuOpen] = useState(false);
+  const classMenuRef = useRef<HTMLDivElement | null>(null);
+  const selectedClass = classes.find((classRoom) => classRoom.id === selectedClassId) ?? null;
+  const resourceDetail = "wordCount" in resource ? `${resource.wordCount.toLocaleString()} words` : resource.duration;
+  const allStudentIds = selectedClass?.students.map((student) => student.id) ?? [];
+  const allStudentsSelected = allStudentIds.length > 0 && allStudentIds.every((studentId) => selectedStudentIds.includes(studentId));
+
+  useEffect(() => {
+    if (!classMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!classMenuRef.current?.contains(event.target as Node)) {
+        setClassMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [classMenuOpen]);
 
   return (
     <div className="assign-backdrop" role="dialog" aria-modal="true" aria-label={`Assign ${resource.title}`}>
       <Card className="assign-dialog">
         <CardHeader className="has-data-[slot=card-action]:grid-cols-[1fr_auto]">
-          <div>
-            <CardDescription>Assign resource</CardDescription>
-            <CardTitle>{resource.title}</CardTitle>
-          </div>
+          <div />
           <CardAction>
             <Button variant="ghost" size="icon-sm" aria-label="Close assign dialog" onClick={onClose}>
               <X size={18} />
@@ -353,56 +385,111 @@ function AssignResourceDialog({
         </CardHeader>
 
         <CardContent className="assign-dialog-content">
-          <section className="assign-section">
+          <section className="assign-resource-info" aria-label="Resource details">
+            <h2>{resource.title}</h2>
             <div>
-              <h3>Class</h3>
-              <p>Choose one class for this assignment.</p>
+              <Badge variant="secondary">{resource.type}</Badge>
+              <Badge variant="secondary">{resource.lexile}L</Badge>
+              <Badge variant="secondary">{resourceDetail}</Badge>
+              <Badge variant="secondary">{resource.genre}</Badge>
             </div>
-            <Select value={selectedClassId} onValueChange={(nextValue) => nextValue && onClassChange(nextValue)}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map((classRoom) => (
-                  <SelectItem key={classRoom.id} value={classRoom.id}>
-                    {classRoom.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </section>
 
           <section className="assign-section">
             <div>
-              <h3>Students</h3>
-              <p>Select one or more students in {selectedClass.name}.</p>
+              <h3>choose class</h3>
             </div>
-            <div className="assign-student-grid">
+            <div className="assign-class-select" ref={classMenuRef}>
+              <button
+                type="button"
+                className="assign-class-select-trigger"
+                aria-haspopup="listbox"
+                aria-expanded={classMenuOpen}
+                onClick={() => setClassMenuOpen((isOpen) => !isOpen)}
+              >
+                <span>{selectedClass?.name ?? "Select class"}</span>
+                <ChevronRight size={18} aria-hidden="true" />
+              </button>
+              {classMenuOpen && (
+                <div className="assign-class-select-menu" role="listbox" aria-label="Class options">
+                {classes.map((classRoom) => (
+                  <button
+                    key={classRoom.id}
+                    type="button"
+                    className="assign-class-select-option"
+                    data-active={classRoom.id === selectedClassId}
+                    role="option"
+                    aria-selected={classRoom.id === selectedClassId}
+                    onClick={() => {
+                      onClassChange(classRoom.id);
+                      setClassMenuOpen(false);
+                    }}
+                  >
+                    {classRoom.name}
+                  </button>
+                ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="assign-section assign-students-section" data-ready={Boolean(selectedClass)}>
+            <div>
+              <h3>choose students</h3>
+            </div>
+            {selectedClass ? (
+              <div className="assign-student-grid">
+              <button
+                type="button"
+                className="assign-student-card assign-student-select-all-card"
+                data-selected={allStudentsSelected}
+                aria-pressed={allStudentsSelected}
+                onClick={() => onStudentSelectAll(allStudentIds)}
+              >
+                <span className="assign-select-all-mark">
+                  <CheckCircle2 size={20} aria-hidden="true" />
+                </span>
+                <span>
+                  <span>Select all</span>
+                  <small>{selectedClass.students.length} students</small>
+                </span>
+              </button>
               {selectedClass.students.map((student) => {
                 const isSelected = selectedStudentIds.includes(student.id);
                 return (
-                  <Button
+                  <button
                     key={student.id}
                     type="button"
-                    variant={isSelected ? "secondary" : "outline"}
                     className="assign-student-card"
+                    data-selected={isSelected}
                     aria-pressed={isSelected}
                     onClick={() => onStudentToggle(student.id)}
                   >
-                    <span className="avatar" style={{ backgroundColor: student.avatarColor }}>
-                      {student.name
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")}
+                    <span className="avatar" style={student.avatarImage ? undefined : { backgroundColor: student.avatarColor }}>
+                      {student.avatarImage ? (
+                        <img src={student.avatarImage} alt="" />
+                      ) : (
+                        student.name
+                          .split(" ")
+                          .map((part) => part[0])
+                          .join("")
+                      )}
                     </span>
                     <span>
-                      <strong>{student.name}</strong>
+                      <span>{student.name}</span>
                       <small>{student.readingLevel}L</small>
                     </span>
-                  </Button>
+                  </button>
                 );
               })}
-            </div>
+              </div>
+            ) : (
+              <div className="assign-student-grid assign-student-grid-placeholder" aria-hidden="true">
+                {Array.from({ length: 9 }, (_, index) => (
+                  <span className="assign-student-card assign-student-placeholder-card" key={index} />
+                ))}
+              </div>
+            )}
           </section>
         </CardContent>
 
@@ -412,7 +499,7 @@ function AssignResourceDialog({
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button disabled={selectedStudentIds.length === 0} onClick={onAssign}>
+            <Button disabled={!selectedClass || selectedStudentIds.length === 0} onClick={onAssign}>
               Assign
             </Button>
           </div>
@@ -433,7 +520,7 @@ function LibraryView() {
   const [minDuration, setMinDuration] = useState(DURATION_MIN);
   const [maxDuration, setMaxDuration] = useState(DURATION_MAX);
   const [assignResource, setAssignResource] = useState<Resource | null>(null);
-  const [assignClassId, setAssignClassId] = useState(classes[0].id);
+  const [assignClassId, setAssignClassId] = useState("");
   const [assignStudentIds, setAssignStudentIds] = useState<string[]>([]);
   const [assignSuccessMessage, setAssignSuccessMessage] = useState("");
 
@@ -448,9 +535,9 @@ function LibraryView() {
           .toLowerCase()
           .includes(normalizedQuery);
       const matchesWords =
-        type !== "E-book" && type !== "Reading" ? true : "wordCount" in resource && resource.wordCount >= minWords && resource.wordCount <= maxWords;
+        type !== "Writing" && type !== "Reading" ? true : "wordCount" in resource && resource.wordCount >= minWords && resource.wordCount <= maxWords;
       const matchesDuration =
-        type !== "Audio" && type !== "Video"
+        type !== "Podcast" && type !== "Video"
           ? true
           : "duration" in resource &&
             getDurationMinutes(resource.duration) >= minDuration &&
@@ -470,7 +557,7 @@ function LibraryView() {
 
   function openAssignDialog(resource: Resource) {
     setAssignResource(resource);
-    setAssignClassId(classes[0].id);
+    setAssignClassId("");
     setAssignStudentIds([]);
     setAssignSuccessMessage("");
   }
@@ -488,8 +575,14 @@ function LibraryView() {
     );
   }
 
+  function toggleAssignAllStudents(studentIds: string[]) {
+    setAssignStudentIds((currentIds) =>
+      studentIds.length > 0 && studentIds.every((studentId) => currentIds.includes(studentId)) ? [] : studentIds,
+    );
+  }
+
   function confirmAssign() {
-    if (!assignResource || assignStudentIds.length === 0) return;
+    if (!assignResource || !assignClassId || assignStudentIds.length === 0) return;
 
     const className = classes.find((classRoom) => classRoom.id === assignClassId)?.name ?? "class";
     setAssignSuccessMessage(
@@ -521,6 +614,7 @@ function LibraryView() {
           selectedStudentIds={assignStudentIds}
           onClassChange={changeAssignClass}
           onStudentToggle={toggleAssignStudent}
+          onStudentSelectAll={toggleAssignAllStudents}
           onClose={() => setAssignResource(null)}
           onAssign={confirmAssign}
         />
@@ -568,7 +662,7 @@ function LibraryView() {
                 onMinChange={setMinLexile}
                 onMaxChange={setMaxLexile}
               />
-              {(type === "E-book" || type === "Reading") && (
+              {(type === "Writing" || type === "Reading") && (
                 <RangeSlider
                   min={WORDS_MIN}
                   max={WORDS_MAX}
@@ -581,7 +675,7 @@ function LibraryView() {
                   onMaxChange={setMaxWords}
                 />
               )}
-              {(type === "Audio" || type === "Video") && (
+              {(type === "Podcast" || type === "Video") && (
                 <RangeSlider
                   min={DURATION_MIN}
                   max={DURATION_MAX}
@@ -775,11 +869,8 @@ function StudentRow({
       onClick={onSelect}
     >
       <div className="student-name">
-        <span className="avatar" style={{ backgroundColor: student.avatarColor }}>
-          {student.name
-            .split(" ")
-            .map((part) => part[0])
-            .join("")}
+        <span className="avatar" style={student.avatarImage ? undefined : { backgroundColor: student.avatarColor }}>
+          {student.avatarImage ? <img src={student.avatarImage} alt="" /> : getInitials(student.name)}
         </span>
         <div>
           <strong>{student.name}</strong>
@@ -805,8 +896,9 @@ type StudentDirectoryStatus = "ok" | "watch" | "support";
 type StudentDirectoryEntry = {
   id: string;
   name: string;
-  className: "G4-A" | "G4-B" | "G5-A" | "G5-B";
+  className: string;
   avatarColor: string;
+  avatarImage: string;
   lexile: number;
   ar: number;
   zpd: string;
@@ -815,155 +907,104 @@ type StudentDirectoryEntry = {
   status: StudentDirectoryStatus;
 };
 
-const classScopeOptions = ["All Classes", "G4-A", "G4-B", "G5-A", "G5-B"];
+const lexileArPairs = [
+  { lexile: 650, ar: 2.9 },
+  { lexile: 690, ar: 3.1 },
+  { lexile: 720, ar: 3.4 },
+  { lexile: 760, ar: 3.6 },
+  { lexile: 800, ar: 4.1 },
+  { lexile: 840, ar: 4.5 },
+  { lexile: 880, ar: 4.8 },
+  { lexile: 930, ar: 5.1 },
+  { lexile: 980, ar: 5.6 },
+];
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function roundToStep(value: number, step: number) {
+  return Math.round(value / step) * step;
+}
+
+function convertLexileToAr(lexile: number) {
+  const sortedPairs = lexileArPairs;
+  const clampedLexile = clampNumber(lexile, sortedPairs[0].lexile, sortedPairs[sortedPairs.length - 1].lexile);
+  const upperIndex = sortedPairs.findIndex((pair) => pair.lexile >= clampedLexile);
+  if (upperIndex <= 0) return sortedPairs[0].ar;
+
+  const lower = sortedPairs[upperIndex - 1];
+  const upper = sortedPairs[upperIndex];
+  const ratio = (clampedLexile - lower.lexile) / (upper.lexile - lower.lexile);
+  return Number((lower.ar + (upper.ar - lower.ar) * ratio).toFixed(1));
+}
+
+function convertArToLexile(ar: number) {
+  const sortedPairs = lexileArPairs;
+  const clampedAr = clampNumber(ar, sortedPairs[0].ar, sortedPairs[sortedPairs.length - 1].ar);
+  const upperIndex = sortedPairs.findIndex((pair) => pair.ar >= clampedAr);
+  if (upperIndex <= 0) return sortedPairs[0].lexile;
+
+  const lower = sortedPairs[upperIndex - 1];
+  const upper = sortedPairs[upperIndex];
+  const ratio = (clampedAr - lower.ar) / (upper.ar - lower.ar);
+  return roundToStep(lower.lexile + (upper.lexile - lower.lexile) * ratio, 10);
+}
+
+const classScopeOptions = ["All Classes", "G4-Rainbow Class"];
 const studentStatusOptions = ["All", "Active", "Needs support"];
 
-const studentDirectory: StudentDirectoryEntry[] = [
-  {
-    id: "STU-10031",
-    name: "Aaliyah Johnson",
-    className: "G4-A",
-    avatarColor: "#a56a42",
-    lexile: 930,
-    ar: 5.1,
-    zpd: "4.5-5.8",
-    activeTasks: 3,
-    lastActive: "2h ago",
-    status: "ok",
-  },
-  {
-    id: "STU-10022",
-    name: "Ethan Kim",
-    className: "G4-B",
-    avatarColor: "#8a6040",
-    lexile: 880,
-    ar: 4.7,
-    zpd: "4.1-5.3",
-    activeTasks: 2,
-    lastActive: "1h ago",
-    status: "ok",
-  },
-  {
-    id: "STU-10023",
-    name: "Mia Rodriguez",
-    className: "G4-A",
-    avatarColor: "#b66b52",
-    lexile: 810,
-    ar: 4.2,
-    zpd: "3.7-4.8",
-    activeTasks: 1,
-    lastActive: "3h ago",
-    status: "watch",
-  },
-  {
-    id: "STU-10024",
-    name: "Liam Chen",
-    className: "G4-B",
-    avatarColor: "#9b6b4c",
-    lexile: 760,
-    ar: 3.6,
-    zpd: "3.1-4.2",
-    activeTasks: 0,
-    lastActive: "5h ago",
-    status: "ok",
-  },
-  {
-    id: "STU-10025",
-    name: "Sophia Patel",
-    className: "G5-A",
-    avatarColor: "#8c5b42",
-    lexile: 710,
-    ar: 3.2,
-    zpd: "2.7-3.8",
-    activeTasks: 2,
-    lastActive: "1h ago",
-    status: "ok",
-  },
-  {
-    id: "STU-10026",
-    name: "Noah Thompson",
-    className: "G5-B",
-    avatarColor: "#7b543d",
-    lexile: 980,
-    ar: 5.6,
-    zpd: "5.0-6.2",
-    activeTasks: 1,
-    lastActive: "2h ago",
-    status: "watch",
-  },
-  {
-    id: "STU-10027",
-    name: "Isabella Garcia",
-    className: "G5-A",
-    avatarColor: "#b27354",
-    lexile: 840,
-    ar: 4.5,
-    zpd: "3.9-5.1",
-    activeTasks: 3,
-    lastActive: "30m ago",
-    status: "ok",
-  },
-  {
-    id: "STU-10028",
-    name: "James Wilson",
-    className: "G5-B",
-    avatarColor: "#6f4f3a",
-    lexile: 690,
-    ar: 3.1,
-    zpd: "2.6-3.6",
-    activeTasks: 0,
-    lastActive: "1d ago",
-    status: "support",
-  },
-  {
-    id: "STU-10029",
-    name: "Olivia Martinez",
-    className: "G4-A",
-    avatarColor: "#9a5c3d",
-    lexile: 900,
-    ar: 4.9,
-    zpd: "4.3-5.5",
-    activeTasks: 2,
-    lastActive: "2h ago",
-    status: "ok",
-  },
-  {
-    id: "STU-10030",
-    name: "Benjamin Moore",
-    className: "G4-B",
-    avatarColor: "#a77955",
-    lexile: 770,
-    ar: 3.8,
-    zpd: "3.2-4.4",
-    activeTasks: 0,
-    lastActive: "6h ago",
-    status: "ok",
-  },
-  {
-    id: "STU-10032",
-    name: "Chloe Anderson",
-    className: "G5-A",
-    avatarColor: "#a76549",
-    lexile: 860,
-    ar: 4.6,
-    zpd: "4.0-5.2",
-    activeTasks: 1,
-    lastActive: "1h ago",
-    status: "ok",
-  },
-  {
-    id: "STU-10033",
-    name: "William Taylor",
-    className: "G5-B",
-    avatarColor: "#7d5a43",
-    lexile: 650,
-    ar: 2.9,
-    zpd: "2.4-3.4",
-    activeTasks: 0,
-    lastActive: "2d ago",
-    status: "support",
-  },
-];
+const studentDirectorySeeds = [
+  ["Aaliyah Johnson", 930, 5.1, "ok"],
+  ["Ethan Kim", 880, 4.7, "ok"],
+  ["Mia Rodriguez", 810, 4.2, "watch"],
+  ["Liam Chen", 760, 3.6, "ok"],
+  ["Sophia Patel", 710, 3.2, "ok"],
+  ["Noah Thompson", 980, 5.6, "watch"],
+  ["Isabella Garcia", 840, 4.5, "ok"],
+  ["James Wilson", 690, 3.1, "support"],
+  ["Olivia Martinez", 900, 4.9, "ok"],
+  ["Benjamin Moore", 770, 3.8, "ok"],
+  ["Chloe Anderson", 860, 4.6, "ok"],
+  ["William Taylor", 650, 2.9, "support"],
+  ["Lucas Brown", 720, 3.4, "watch"],
+  ["Ava Davis", 800, 4.1, "ok"],
+  ["Daniel Park", 875, 4.8, "ok"],
+  ["Emily Nguyen", 735, 3.5, "ok"],
+  ["Mason Lee", 915, 5.0, "ok"],
+  ["Harper Chen", 795, 4.0, "watch"],
+  ["Jackson Wu", 685, 3.0, "support"],
+  ["Ella Kim", 850, 4.4, "ok"],
+  ["Logan Smith", 740, 3.7, "ok"],
+  ["Amelia Wang", 890, 4.9, "ok"],
+  ["Jayden Zhao", 705, 3.3, "watch"],
+  ["Lily Zhou", 825, 4.3, "ok"],
+  ["Ryan Lin", 780, 3.9, "ok"],
+] satisfies Array<[string, number, number, StudentDirectoryStatus]>;
+
+const studentDirectory: StudentDirectoryEntry[] = studentDirectorySeeds.map(([name, lexile, ar, status], index) => ({
+  id: `STU-${String(10031 + index).padStart(5, "0")}`,
+  name,
+  className: "G4-Rainbow Class",
+  avatarColor: "#ffffff",
+  avatarImage: studentAvatarImages[index % studentAvatarImages.length],
+  lexile,
+  ar,
+  zpd: "",
+  activeTasks: index % 4,
+  lastActive: index % 5 === 0 ? "30m ago" : `${(index % 6) + 1}h ago`,
+  status,
+}));
+
+type CompletionLeaderboardStudent = ReturnType<typeof createCompletionLeaderboard>[number];
+type StudentDetailTab = "tasks" | "report";
+type StudentDetailStudent = CompletionLeaderboardStudent & {
+  id: string;
+  lexile: number;
+  ar: number;
+  trend: number;
+  accuracy: number;
+};
 
 function StudentOverviewCard({
   tone,
@@ -971,7 +1012,7 @@ function StudentOverviewCard({
   primary,
   secondary,
 }: {
-  tone: "green" | "purple" | "amber" | "pink";
+  tone: "green" | "amber" | "blue" | "pink";
   title: string;
   primary: string;
   secondary: string;
@@ -990,60 +1031,200 @@ function StudentOverviewCard({
   );
 }
 
-function StudentDirectoryCard({ student }: { student: StudentDirectoryEntry }) {
-  const statusLabel =
-    student.status === "support"
-      ? "Needs support"
-      : student.activeTasks === 0
-        ? "No active tasks"
-        : `${student.activeTasks} active task${student.activeTasks > 1 ? "s" : ""}`;
+function StudentDirectoryCard({
+  student,
+  onUpdate,
+  onViewDetail,
+}: {
+  student: StudentDirectoryEntry;
+  onUpdate: (studentId: string, values: Pick<StudentDirectoryEntry, "lexile" | "ar">) => void;
+  onViewDetail: (student: StudentDirectoryEntry) => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [lexileValue, setLexileValue] = useState(String(student.lexile));
+  const [arValue, setArValue] = useState(String(student.ar));
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!editOpen) return;
+    setLexileValue(String(student.lexile));
+    setArValue(String(student.ar));
+  }, [editOpen, student.ar, student.lexile]);
+
+  function normalizeLexileInput(value: string) {
+    const parsedLexile = Number(value);
+    if (!Number.isFinite(parsedLexile)) return null;
+    return roundToStep(clampNumber(parsedLexile, lexileArPairs[0].lexile, lexileArPairs[lexileArPairs.length - 1].lexile), 10);
+  }
+
+  function normalizeArInput(value: string) {
+    const parsedAr = Number(value);
+    if (!Number.isFinite(parsedAr)) return null;
+    return Number(clampNumber(parsedAr, lexileArPairs[0].ar, lexileArPairs[lexileArPairs.length - 1].ar).toFixed(1));
+  }
+
+  function changeLexile(nextLexile: string) {
+    setLexileValue(nextLexile);
+    if (nextLexile.trim() === "") return;
+
+    const normalizedLexile = normalizeLexileInput(nextLexile);
+    if (normalizedLexile === null) return;
+    setArValue(String(convertLexileToAr(normalizedLexile)));
+  }
+
+  function changeAr(nextAr: string) {
+    setArValue(nextAr);
+    if (nextAr.trim() === "") return;
+
+    const normalizedAr = normalizeArInput(nextAr);
+    if (normalizedAr === null) return;
+    setLexileValue(String(convertArToLexile(normalizedAr)));
+  }
+
+  function saveLexileAr() {
+    const normalizedLexile = normalizeLexileInput(lexileValue);
+    const normalizedAr = normalizeArInput(arValue);
+
+    if (normalizedLexile === null && normalizedAr === null) {
+      setLexileValue(String(student.lexile));
+      setArValue(String(student.ar));
+      return;
+    }
+
+    const nextLexile = normalizedLexile ?? convertArToLexile(normalizedAr ?? student.ar);
+    const nextAr = normalizedAr ?? convertLexileToAr(nextLexile);
+    onUpdate(student.id, { lexile: nextLexile, ar: nextAr });
+    setEditOpen(false);
+  }
 
   return (
-    <Card className="student-directory-card">
-      <CardContent>
-        <div className="student-card-top">
-          <span className="student-photo-placeholder" style={{ backgroundColor: student.avatarColor }}>
-            {student.name
-              .split(" ")
-              .map((part) => part[0])
-              .join("")}
-          </span>
-          <div>
-            <h3>{student.name}</h3>
-            <p>{student.id}</p>
+    <>
+      <Card className="student-directory-card">
+        <CardContent>
+          <div className="student-card-actions" ref={menuRef}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={`Open ${student.name} actions`}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              <MoreHorizontal size={18} />
+            </Button>
+            {menuOpen && (
+              <div className="student-card-action-menu">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setEditOpen(true);
+                  }}
+                >
+                  Modify Lexile/AR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onViewDetail(student);
+                  }}
+                >
+                  View Detail
+                </button>
+              </div>
+            )}
           </div>
-          <Badge className="student-class-badge" data-class={student.className} variant="secondary">
-            {student.className}
-          </Badge>
-          <Button variant="ghost" size="icon-sm" aria-label={`More actions for ${student.name}`}>
-            ···
-          </Button>
-        </div>
-        <div className="student-card-metrics">
-          <div>
-            <span>Lexile</span>
-            <strong>{student.lexile}L</strong>
+          <div className="student-card-top">
+            <span className="student-photo-placeholder">
+              <img src={student.avatarImage} alt={`${student.name} avatar`} />
+            </span>
+            <div>
+              <h3>{student.name}</h3>
+              <p>{student.id}</p>
+            </div>
           </div>
-          <div>
-            <span>AR / ZPD</span>
-            <strong>
-              {student.ar} ({student.zpd})
-            </strong>
+          <div className="student-card-metrics">
+            <div>
+              <span>Lexile</span>
+              <strong>{student.lexile}L</strong>
+            </div>
+            <div>
+              <span>AR</span>
+              <strong>{student.ar}</strong>
+            </div>
           </div>
+        </CardContent>
+      </Card>
+      {editOpen && (
+        <div className="feedback-backdrop" role="dialog" aria-modal="true" aria-label={`${student.name} Lexile and AR editor`}>
+          <Card className="student-lexile-editor">
+            <CardHeader>
+              <div className="student-task-dialog-title">
+                <span className="leaderboard-avatar">
+                  <img src={student.avatarImage} alt="" />
+                </span>
+                <div>
+                  <CardDescription>{student.id}</CardDescription>
+                  <CardTitle>{student.name}</CardTitle>
+                </div>
+              </div>
+              <CardAction>
+                <Button variant="ghost" size="icon-sm" aria-label="Close Lexile and AR editor" onClick={() => setEditOpen(false)}>
+                  <X size={18} />
+                </Button>
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              <label>
+                <span>Lexile</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={lexileValue}
+                  onChange={(event) => changeLexile(event.target.value)}
+                />
+              </label>
+              <label>
+                <span>AR</span>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*[.]?[0-9]*"
+                  value={arValue}
+                  onChange={(event) => changeAr(event.target.value)}
+                />
+              </label>
+            </CardContent>
+            <CardFooter>
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={saveLexileAr}>
+                Save
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
-        <div className="student-card-footer" data-status={student.status}>
-          <span className="student-status-dot" />
-          <strong>{statusLabel}</strong>
-          <span>·</span>
-          <span>Active {student.lastActive}</span>
-        </div>
-      </CardContent>
-    </Card>
+      )}
+    </>
   );
 }
-
-const taskPeriods = ["This Week (May 11 - May 17)", "Last Week", "This Month", "This Quarter"];
-const assignedClassScopes = ["All Classes", "Grade 5 Reading A", "Grade 6 Skills B", "Grade 4 Reading"];
 
 const assignedMetrics = [
   {
@@ -1080,17 +1261,65 @@ const assignedMetrics = [
 const taskStatusBreakdown = [
   { label: "Completed", value: 80, percent: 59, color: "var(--primary)" },
   { label: "In Progress", value: 28, percent: 21, color: "#f59e0b" },
-  { label: "Overdue", value: 12, percent: 9, color: "#ff2d55" },
   { label: "Not Started", value: 16, percent: 12, color: "#e5e7eb" },
 ];
 
-const leaderboard = [
-  { rank: 1, name: "Aaliyah Johnson", avatar: "AJ", done: 8, total: 8, rate: 100, color: "#8b4b32" },
-  { rank: 2, name: "Ethan Kim", avatar: "EK", done: 6, total: 7, rate: 86, color: "#b36f3c" },
-  { rank: 3, name: "Mia Rodriguez", avatar: "MR", done: 6, total: 8, rate: 75, color: "#9a5038" },
-  { rank: 4, name: "Liam Chen", avatar: "LC", done: 5, total: 7, rate: 71, color: "#c47a3f" },
-  { rank: 5, name: "Sophia Patel", avatar: "SP", done: 4, total: 8, rate: 50, color: "#7d3f2e" },
-];
+const taskStatusChartConfig = {
+  completed: { label: "Completed", color: "var(--primary)" },
+  inProgress: { label: "In Progress", color: "#f59e0b" },
+  notStarted: { label: "Not Started", color: "#e5e7eb" },
+} satisfies ChartConfig;
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("");
+}
+
+function createCompletionLeaderboard(students: Student[]) {
+  return [...students]
+    .sort((a, b) => b.completionRate - a.completionRate || b.weeklyMinutes - a.weeklyMinutes)
+    .map((student, index) => {
+      const total = 8 + (index % 3);
+      const completed = Math.min(total, Math.round((student.completionRate / 100) * total));
+      const remaining = total - completed;
+      const inProgress = Math.min(remaining, student.risk === "High" ? 1 : student.risk === "Medium" ? 2 : index % 2);
+      const notStarted = Math.max(0, remaining - inProgress);
+
+      return {
+        id: student.id,
+        rank: index + 1,
+        name: student.name,
+        avatar: getInitials(student.name),
+        avatarImage: student.avatarImage,
+        readingLevel: student.readingLevel,
+        tasks: student.tasks,
+        completed,
+        inProgress,
+        notStarted,
+        done: completed,
+        total,
+        rate: student.completionRate,
+        color: student.avatarColor,
+      };
+    });
+}
+
+const leaderboard = createCompletionLeaderboard(classes[0].students);
+
+function getCompletionStudentFromDirectory(student: StudentDirectoryEntry): CompletionLeaderboardStudent {
+  const matchedStudent = leaderboard.find((item) => item.name === student.name) ?? leaderboard[0];
+
+  return {
+    ...matchedStudent,
+    name: student.name,
+    avatar: getInitials(student.name),
+    avatarImage: student.avatarImage,
+    readingLevel: student.lexile,
+    color: student.avatarColor,
+  };
+}
 
 const lexileDistribution = [
   { label: "< 600L", value: 8 },
@@ -1102,10 +1331,9 @@ const lexileDistribution = [
 
 const typeDistribution = [
   { label: "Reading", value: 48 },
-  { label: "Writing", value: 36 },
-  { label: "Quiz", value: 24 },
-  { label: "Video", value: 16 },
-  { label: "Discussion", value: 12 },
+  { label: "Video", value: 24 },
+  { label: "Podcast", value: 18 },
+  { label: "Writing prompt", value: 12 },
 ];
 
 const genreDistribution = [
@@ -1115,6 +1343,115 @@ const genreDistribution = [
   { label: "Biography", value: 16 },
   { label: "Informational", value: 18 },
 ];
+
+const assignedTaskRowsByWeek = {
+  "this-week": [
+    {
+      id: 1,
+      taskName: "Garden Path Reading",
+      recipient: "Aaliyah Johnson",
+      taskType: "Reading",
+      sentAt: "May 11, 09:20",
+      submittedAt: "May 12, 13:48",
+      status: "Completed",
+      completedAt: "May 12, 14:05",
+    },
+    {
+      id: 2,
+      taskName: "Ocean Animals Video",
+      recipient: "Ethan Kim",
+      taskType: "Video",
+      sentAt: "May 11, 10:15",
+      submittedAt: "-",
+      status: "In Progress",
+      completedAt: "-",
+    },
+    {
+      id: 3,
+      taskName: "Biography Podcast",
+      recipient: "Mia Rodriguez",
+      taskType: "Podcast",
+      sentAt: "May 12, 08:45",
+      submittedAt: "May 13, 10:56",
+      status: "Completed",
+      completedAt: "May 13, 11:30",
+    },
+    {
+      id: 4,
+      taskName: "Fiction Response",
+      recipient: "Liam Chen",
+      taskType: "Writing prompt",
+      sentAt: "May 13, 13:10",
+      submittedAt: "-",
+      status: "Not Started",
+      completedAt: "-",
+    },
+    {
+      id: 5,
+      taskName: "Lexile Practice Set",
+      recipient: "Sophia Patel",
+      taskType: "Reading",
+      sentAt: "May 14, 09:00",
+      submittedAt: "-",
+      status: "In Progress",
+      completedAt: "-",
+    },
+  ],
+  "last-week": [
+    {
+      id: 1,
+      taskName: "Main Idea Reading",
+      recipient: "Noah Thompson",
+      taskType: "Reading",
+      sentAt: "May 04, 09:10",
+      submittedAt: "May 05, 10:36",
+      status: "Completed",
+      completedAt: "May 05, 10:50",
+    },
+    {
+      id: 2,
+      taskName: "Science Video Notes",
+      recipient: "Isabella Garcia",
+      taskType: "Video",
+      sentAt: "May 05, 11:30",
+      submittedAt: "May 06, 12:58",
+      status: "Completed",
+      completedAt: "May 06, 13:15",
+    },
+    {
+      id: 3,
+      taskName: "Podcast Reflection",
+      recipient: "James Wilson",
+      taskType: "Podcast",
+      sentAt: "May 06, 08:40",
+      submittedAt: "-",
+      status: "In Progress",
+      completedAt: "-",
+    },
+    {
+      id: 4,
+      taskName: "Short Story Quiz",
+      recipient: "Olivia Martinez",
+      taskType: "Reading",
+      sentAt: "May 07, 14:00",
+      submittedAt: "May 08, 09:12",
+      status: "Completed",
+      completedAt: "May 08, 09:35",
+    },
+    {
+      id: 5,
+      taskName: "Vocabulary Practice",
+      recipient: "Benjamin Moore",
+      taskType: "Writing prompt",
+      sentAt: "May 08, 10:20",
+      submittedAt: "-",
+      status: "Not Started",
+      completedAt: "-",
+    },
+  ],
+};
+
+type AssignedTaskWeek = keyof typeof assignedTaskRowsByWeek;
 
 type AssignedBentoId =
   | "completion"
@@ -1135,7 +1472,7 @@ const assignedBentoCards: Array<{
   icon: typeof BookOpen;
   tone: "green" | "purple" | "amber" | "red" | "blue";
 }> = [
-  { id: "completion", title: "Completion Rate", value: "80%", detail: "16 / 20 students", icon: CheckCircle2, tone: "green" },
+  { id: "completion", title: "Completion Rate", value: "80%", detail: "20 / 25 students", icon: CheckCircle2, tone: "green" },
   { id: "assigned", title: "Tasks Assigned", value: "18", detail: "This week", icon: CalendarDays, tone: "purple" },
   { id: "feedback", title: "Waiting Feedback", value: "12", detail: "Needs review", icon: MessageCircle, tone: "amber" },
   { id: "overdue", title: "Overdue Tasks", value: "3", detail: "3 students affected", icon: CircleAlert, tone: "red" },
@@ -1153,15 +1490,17 @@ const myClassSections: Array<{
   secondary: string;
   detail: string;
   icon: typeof BookOpen;
-  tone: "green" | "purple" | "amber" | "pink";
+  iconImage: string;
+  tone: "green" | "purple" | "amber" | "blue" | "pink";
 }> = [
   {
     key: "students",
     title: "Total Students",
-    primary: "82 students",
-    secondary: "4 classes",
+    primary: "25 students",
+    secondary: "1 class",
     detail: "",
     icon: UsersRound,
+    iconImage: `${import.meta.env.BASE_URL}myclass-icons/students.png`,
     tone: "green",
   },
   {
@@ -1171,25 +1510,18 @@ const myClassSections: Array<{
     secondary: "64 total this month",
     detail: "",
     icon: ClipboardPlus,
-    tone: "purple",
+    iconImage: `${import.meta.env.BASE_URL}myclass-icons/assigned-tasks.png`,
+    tone: "amber",
   },
   {
     key: "lexile",
-    title: "Lexile / AR",
+    title: "Report",
     primary: "820L",
     secondary: "Avg. Lexile",
     detail: "Avg. AR 4.2",
     icon: ListChecks,
-    tone: "amber",
-  },
-  {
-    key: "reading",
-    title: "Reading Time / Words",
-    primary: "18h 42m",
-    secondary: "245,680 words",
-    detail: "",
-    icon: BookOpen,
-    tone: "pink",
+    iconImage: `${import.meta.env.BASE_URL}myclass-icons/lexile-ar.png`,
+    tone: "blue",
   },
 ];
 
@@ -1202,14 +1534,6 @@ const lexileTrend = [
   { label: "Jun", lexile: 1000, ar: 5.1 },
 ];
 
-const lexileClassDistribution = [
-  { label: "<600L", value: 6 },
-  { label: "600-800L", value: 18 },
-  { label: "800-1000L", value: 28 },
-  { label: "1000-1200L", value: 20 },
-  { label: ">1200L", value: 10 },
-];
-
 const arClassDistribution = [
   { label: "1.0-2.0", value: 8 },
   { label: "2.1-3.0", value: 16 },
@@ -1219,12 +1543,70 @@ const arClassDistribution = [
 ];
 
 const lexileLeaderboard = [
-  { rank: 1, name: "Sophia Patel", avatar: "SP", lexile: "1280L", ar: "6.2", trend: "+150L", color: "#8b4b32" },
-  { rank: 2, name: "Ethan Kim", avatar: "EK", lexile: "1180L", ar: "5.8", trend: "+190L", color: "#b36f3c" },
-  { rank: 3, name: "Mia Rodriguez", avatar: "MR", lexile: "1040L", ar: "5.4", trend: "+160L", color: "#9a5038" },
-  { rank: 4, name: "Aaliyah Johnson", avatar: "AJ", lexile: "1000L", ar: "5.1", trend: "+120L", color: "#c47a3f" },
-  { rank: 5, name: "Liam Chen", avatar: "LC", lexile: "960L", ar: "4.9", trend: "+110L", color: "#7d3f2e" },
-];
+  { rank: 1, name: "Sophia Patel", lexile: 1280, ar: 6.2, trend: 150, accuracy: 94 },
+  { rank: 2, name: "Ethan Kim", lexile: 1180, ar: 5.8, trend: 190, accuracy: 91 },
+  { rank: 3, name: "Mia Rodriguez", lexile: 1040, ar: 5.4, trend: 160, accuracy: 88 },
+  { rank: 4, name: "Aaliyah Johnson", lexile: 1000, ar: 5.1, trend: 120, accuracy: 86 },
+  { rank: 5, name: "Liam Chen", lexile: 960, ar: 4.9, trend: 110, accuracy: 84 },
+  { rank: 6, name: "Noah Thompson", lexile: 940, ar: 4.7, trend: 95, accuracy: 82 },
+  { rank: 7, name: "Olivia Martinez", lexile: 910, ar: 4.5, trend: 88, accuracy: 80 },
+].map((student) => {
+  const directoryEntry = studentDirectory.find((entry) => entry.name === student.name);
+
+  return {
+    ...student,
+    avatar: getInitials(student.name),
+    avatarImage: directoryEntry?.avatarImage,
+    color: directoryEntry?.avatarColor ?? "#9a5038",
+    id: directoryEntry?.id ?? `STU-${student.rank}`,
+  };
+});
+
+function getReportStudentFromDirectory(student: StudentDirectoryEntry): (typeof lexileLeaderboard)[number] {
+  const matchedStudent = lexileLeaderboard.find((item) => item.name === student.name) ?? lexileLeaderboard[0];
+
+  return {
+    ...matchedStudent,
+    name: student.name,
+    lexile: student.lexile,
+    ar: student.ar,
+    avatar: getInitials(student.name),
+    avatarImage: student.avatarImage,
+    color: student.avatarColor,
+    id: student.id,
+  };
+}
+
+function createStudentDetailStudent(
+  taskStudent: CompletionLeaderboardStudent,
+  reportStudent?: (typeof lexileLeaderboard)[number],
+): StudentDetailStudent {
+  const matchedReport = reportStudent ?? lexileLeaderboard.find((item) => item.name === taskStudent.name);
+  const reportLexile = matchedReport?.lexile ?? taskStudent.readingLevel;
+  const reportAr = matchedReport?.ar ?? convertLexileToAr(reportLexile);
+
+  return {
+    ...taskStudent,
+    id: matchedReport?.id ?? taskStudent.id,
+    lexile: reportLexile,
+    ar: reportAr,
+    trend: matchedReport?.trend ?? Math.max(45, Math.round(taskStudent.rate * 0.9)),
+    accuracy: matchedReport?.accuracy ?? taskStudent.rate,
+    avatar: taskStudent.avatar || matchedReport?.avatar || getInitials(taskStudent.name),
+    avatarImage: taskStudent.avatarImage ?? matchedReport?.avatarImage,
+    color: taskStudent.color || matchedReport?.color || "#ffffff",
+    readingLevel: taskStudent.readingLevel || reportLexile,
+  };
+}
+
+function getStudentDetailFromDirectory(student: StudentDirectoryEntry) {
+  return createStudentDetailStudent(getCompletionStudentFromDirectory(student), getReportStudentFromDirectory(student));
+}
+
+function getStudentDetailFromReportStudent(student: (typeof lexileLeaderboard)[number]) {
+  const matchedTaskStudent = leaderboard.find((item) => item.name === student.name) ?? leaderboard[0];
+  return createStudentDetailStudent(matchedTaskStudent, student);
+}
 
 function CompletionRing({ value }: { value: number }) {
   return (
@@ -1293,7 +1675,174 @@ function StatusDonut() {
   );
 }
 
-function LeaderboardCard() {
+function AssignedStatusRadialChart() {
+  const chartData = taskStatusBreakdown.map((item) => ({
+    name: item.label,
+    value: item.value,
+    fill: item.color,
+  }));
+
+  return (
+    <ChartContainer config={taskStatusChartConfig} className="assigned-status-chart">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={chartData}
+            dataKey="value"
+            nameKey="name"
+            startAngle={90}
+            endAngle={-270}
+            innerRadius="58%"
+            outerRadius="82%"
+            stroke="var(--card)"
+            strokeWidth={3}
+            cornerRadius={4}
+            isAnimationActive
+            animationBegin={80}
+            animationDuration={1100}
+            animationEasing="ease-out"
+          >
+            {chartData.map((entry) => (
+              <Cell key={entry.name} fill={entry.fill} />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="assigned-status-chart-center">
+        <span>Total</span>
+        <strong>136</strong>
+        <span>Tasks</span>
+      </div>
+    </ChartContainer>
+  );
+}
+
+function LeaderboardArrowIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M8.91 19.92L15.43 13.4C16.2 12.63 16.2 11.37 15.43 10.6L8.91 4.07996"
+        stroke="#171717"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TaskFilterChevronIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M19.92 8.94995L13.4 15.47C12.63 16.24 11.37 16.24 10.6 15.47L4.08 8.94995"
+        stroke="#171717"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function StudentTaskDropdown({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!dropdownRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  return (
+    <span className="student-task-select" data-open={open} ref={dropdownRef}>
+      <button type="button" onClick={() => setOpen((current) => !current)}>
+        <span>{value}</span>
+        <TaskFilterChevronIcon />
+      </button>
+      {open && (
+        <span className="student-task-select-menu">
+          {options.map((option) => (
+            <button
+              key={option}
+              type="button"
+              data-selected={option === value}
+              onClick={() => {
+                onChange(option);
+                setOpen(false);
+              }}
+            >
+              {option}
+            </button>
+          ))}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function StudentCompletionBar({
+  student,
+  onOpen,
+}: {
+  student: (typeof leaderboard)[number];
+  onOpen: () => void;
+}) {
+  const completedWidth = (student.completed / student.total) * 100;
+  const inProgressWidth = (student.inProgress / student.total) * 100;
+  const notStartedWidth = Math.max(0, 100 - completedWidth - inProgressWidth);
+
+  return (
+    <div className="leaderboard-status-cell">
+      <div className="leaderboard-status-chart" aria-label={`${student.name}: ${student.done} of ${student.total} tasks complete`}>
+        <span className="leaderboard-status-segment completed" style={{ width: `${completedWidth}%` }} />
+        <span className="leaderboard-status-segment in-progress" style={{ width: `${inProgressWidth}%` }} />
+        <span className="leaderboard-status-segment not-started" style={{ width: `${notStartedWidth}%` }} />
+        <span className="leaderboard-chart-label">
+          {student.done}/{student.total} · {student.rate}%
+        </span>
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="leaderboard-detail-button"
+        aria-label={`View ${student.name} task completion`}
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpen();
+        }}
+      >
+        <LeaderboardArrowIcon />
+      </Button>
+    </div>
+  );
+}
+
+function LeaderboardCard({
+  onOpenStudent,
+}: {
+  onOpenStudent: (student: StudentDetailStudent, tab?: StudentDetailTab) => void;
+}) {
+
   return (
     <Card className="leaderboard-card">
       <CardHeader>
@@ -1306,35 +1855,120 @@ function LeaderboardCard() {
         <div className="leaderboard-head">
           <span>#</span>
           <span>Student</span>
-          <span>Completed / Assigned</span>
-          <span>Completion Rate</span>
+          <span>Task Status</span>
         </div>
         <div className="leaderboard-list">
           {leaderboard.map((student) => (
-            <div className="leaderboard-row" key={student.name}>
+            <div
+              className="leaderboard-row"
+              key={student.name}
+              role="button"
+              tabIndex={0}
+              onClick={() => onOpenStudent(createStudentDetailStudent(student), "tasks")}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onOpenStudent(createStudentDetailStudent(student), "tasks");
+                }
+              }}
+            >
               <Badge variant="secondary" className="rank-badge" data-rank={student.rank}>
                 {student.rank}
               </Badge>
               <div className="leaderboard-student">
-                <span className="leaderboard-avatar" style={{ backgroundColor: student.color }}>
-                  {student.avatar}
+                <span className="leaderboard-avatar" style={student.avatarImage ? undefined : { backgroundColor: student.color }}>
+                  {student.avatarImage ? <img src={student.avatarImage} alt="" /> : student.avatar}
                 </span>
                 <strong>{student.name}</strong>
               </div>
-              <span>
-                {student.done} / {student.total}
-              </span>
-              <div className="leaderboard-rate">
-                <span className="progress-track">
-                  <i style={{ width: `${student.rate}%` }} />
-                </span>
-                <strong>{student.rate}%</strong>
-              </div>
+              <StudentCompletionBar student={student} onOpen={() => onOpenStudent(createStudentDetailStudent(student), "tasks")} />
             </div>
           ))}
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function StudentTasksPanel({
+  student,
+}: {
+  student: StudentDetailStudent;
+}) {
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [timeFilter, setTimeFilter] = useState("All time");
+  const statusOptions = ["All", "Completed", "In progress", "Not started"];
+  const typeOptions = ["All", "Reading", "Video", "Podcast", "Writing"];
+  const timeOptions = ["All time", "This week", "This month"];
+  const taskStatusSequence = ["Completed", "In progress", "Not started", "Completed", "In progress"];
+  const taskTypeSequence = ["Reading", "Video", "Podcast", "Writing", "Reading"];
+  const taskMocks = Array.from({ length: 5 }, (_, index) => {
+    const task = student.tasks[index % student.tasks.length];
+    const status = taskStatusSequence[index];
+    const progress = status === "Completed" ? 100 : status === "In progress" ? Math.max(35, Math.min(88, task.progress)) : 0;
+    return {
+      ...task,
+      id: `${task.id}-${index}`,
+      status,
+      displayType: taskTypeSequence[index],
+      progress,
+      score: status === "Not started" ? null : task.score ?? progress,
+      date: `2026/3/${String(26 + index).padStart(2, "0")} 15:00`,
+    };
+  });
+  const visibleTasks = taskMocks.filter((task, index) => {
+    const matchesStatus = statusFilter === "All" || task.status.toLowerCase() === statusFilter.toLowerCase();
+    const matchesType = typeFilter === "All" || task.displayType === typeFilter;
+    const matchesTime = timeFilter !== "This week" || index < 2;
+    return matchesStatus && matchesType && matchesTime;
+  });
+
+  return (
+    <div className="student-task-dialog-content">
+      <div className="student-task-filters">
+        <label>
+          <span>Status</span>
+          <StudentTaskDropdown value={statusFilter} options={statusOptions} onChange={setStatusFilter} />
+        </label>
+        <label>
+          <span>Type</span>
+          <StudentTaskDropdown value={typeFilter} options={typeOptions} onChange={setTypeFilter} />
+        </label>
+        <label>
+          <span>Time Range</span>
+          <StudentTaskDropdown value={timeFilter} options={timeOptions} onChange={setTimeFilter} />
+        </label>
+      </div>
+
+      <div className="student-task-card-list">
+        {visibleTasks.map((task, index) => {
+          const genre = ["Science", "Arts & Culture", "Earth Science"][index % 3];
+          const accuracy = task.score ?? task.progress;
+          return (
+            <div key={task.id} className="student-task-card" data-status={task.status.toLowerCase().replace(/\s+/g, "-")}>
+              <div className="student-task-card-head">
+                <h3>{task.title}</h3>
+                <TaskStatusPill status={task.status} />
+              </div>
+              <div className="student-task-tags">
+                <span>{student.readingLevel + index * 20} L</span>
+                <span data-tone="type">{task.displayType}</span>
+                <span>{genre}</span>
+              </div>
+              <div className="student-task-accuracy">
+                <span>Accuracy</span>
+                <div className="progress-track">
+                  <i style={{ width: `${accuracy}%` }} />
+                </div>
+                <strong>{accuracy}%</strong>
+              </div>
+              <time>{task.date}</time>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -1481,8 +2115,8 @@ function AssignedBentoExpandedContent({ id }: { id: AssignedBentoId }) {
             <Badge variant="secondary" className="rank-badge" data-rank={student.rank}>
               {student.rank}
             </Badge>
-            <span className="leaderboard-avatar" style={{ backgroundColor: student.color }}>
-              {student.avatar}
+            <span className="leaderboard-avatar" style={student.avatarImage ? undefined : { backgroundColor: student.color }}>
+              {student.avatarImage ? <img src={student.avatarImage} alt="" /> : student.avatar}
             </span>
             <strong>{student.name}</strong>
             <span>
@@ -1643,8 +2277,6 @@ function MyClassSummaryCard({
   isActive: boolean;
   onSelect: () => void;
 }) {
-  const Icon = section.icon;
-
   return (
     <Button
       type="button"
@@ -1655,7 +2287,7 @@ function MyClassSummaryCard({
       onClick={onSelect}
     >
       <span className="myclass-summary-icon">
-        <Icon size={36} />
+        <img src={section.iconImage} alt="" aria-hidden="true" />
       </span>
       <span className="myclass-summary-copy">
         <span>{section.title}</span>
@@ -1665,250 +2297,1043 @@ function MyClassSummaryCard({
           {section.detail && <em>{section.detail}</em>}
         </small>
       </span>
-      {isActive ? <CheckCircle2 className="myclass-summary-check" size={24} /> : <ChevronRight className="myclass-summary-arrow" size={24} />}
     </Button>
   );
 }
 
-function StudentSection() {
-  const [classScope, setClassScope] = useState("All Classes");
-  const [studentQuery, setStudentQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [activeFilter, setActiveFilter] = useState("This Month");
-
-  const visibleStudents = useMemo(() => {
-    const normalizedQuery = studentQuery.trim().toLowerCase();
-
-    return studentDirectory.filter((student) => {
-      const matchesClass = classScope === "All Classes" || student.className === classScope;
-      const matchesStatus =
-        statusFilter === "All" ||
-        (statusFilter === "Needs support" && student.status === "support") ||
-        (statusFilter === "Active" && student.status !== "support");
-      const matchesQuery =
-        normalizedQuery.length === 0 ||
-        [student.name, student.id, student.className].join(" ").toLowerCase().includes(normalizedQuery);
-
-      return matchesClass && matchesStatus && matchesQuery;
-    });
-  }, [classScope, statusFilter, studentQuery]);
-
+function StudentSection({
+  students,
+  onUpdateStudent,
+  onViewDetail,
+}: {
+  students: StudentDirectoryEntry[];
+  onUpdateStudent: (studentId: string, values: Pick<StudentDirectoryEntry, "lexile" | "ar">) => void;
+  onViewDetail: (student: StudentDirectoryEntry) => void;
+}) {
   return (
     <section className="student-dashboard">
-      <Card className="student-filter-card">
-        <CardContent>
-          <label className="student-filter-control">
-            <span>Class Scope</span>
-            <Select value={classScope} onValueChange={(value) => value && setClassScope(value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {classScopeOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-
-          <label className="student-search-control">
-            <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={studentQuery}
-              onChange={(event) => setStudentQuery(event.target.value)}
-              placeholder="Search students by name or ID..."
-            />
-          </label>
-
-          <label className="student-filter-control compact">
-            <span>Status</span>
-            <Select value={statusFilter} onValueChange={(value) => value && setStatusFilter(value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {studentStatusOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-
-          <label className="student-filter-control compact">
-            <span>Active</span>
-            <Select value={activeFilter} onValueChange={(value) => value && setActiveFilter(value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {["This Month", "This Week", "Today"].map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
-
-          <Button
-            variant="outline"
-            onClick={() => {
-              setClassScope("All Classes");
-              setStudentQuery("");
-              setStatusFilter("All");
-              setActiveFilter("This Month");
-            }}
-          >
-            Clear
-          </Button>
-        </CardContent>
-      </Card>
-
       <section className="student-directory-grid">
-        {visibleStudents.map((student) => (
-          <StudentDirectoryCard key={student.id} student={student} />
+        {students.map((student) => (
+          <StudentDirectoryCard
+            key={student.id}
+            student={student}
+            onUpdate={onUpdateStudent}
+            onViewDetail={onViewDetail}
+          />
         ))}
       </section>
     </section>
   );
 }
 
-function AssignedTaskSection() {
-  const [taskPeriod, setTaskPeriod] = useState(taskPeriods[0]);
-  const [classScope, setClassScope] = useState(assignedClassScopes[0]);
-  const [expandedCardId, setExpandedCardId] = useState<AssignedBentoId | null>(null);
+function AssignedMiniBarChart({
+  title,
+  data,
+  tone,
+  isSelected,
+  onSelect,
+}: {
+  title: string;
+  data: Array<{ label: string; value: number }>;
+  tone: "green" | "blue" | "amber";
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const max = Math.max(...data.map((item) => item.value));
+  const summary =
+    tone === "green"
+      ? "Lexile Distribution：750～900"
+      : tone === "blue"
+        ? "Type Distribution：Reading、Video、Podcast、Writing"
+        : "Genre Distribution：Fiction、Nonfiction、Biography";
+
+  return (
+    <Card
+      role="button"
+      tabIndex={0}
+      className="assigned-mini-chart"
+      data-tone={tone}
+      data-selected={isSelected}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
+    >
+      <CardContent>
+        {isSelected ? (
+          <>
+            <strong>{title}</strong>
+            <div className="assigned-mini-bars">
+              {data.map((item) => (
+                <div className="assigned-mini-bar" key={item.label}>
+                  <span>{item.value}</span>
+                  <i style={{ height: `${Math.max(14, (item.value / max) * 100)}%` }} />
+                  <small>{item.label}</small>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="assigned-mini-collapsed-copy">
+            <p className="assigned-mini-summary">{summary}</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function AssignedTaskWeekSummary({ title }: { title: string }) {
+  return (
+    <div className="assigned-task-week-summary">
+      <CardTitle>{title}</CardTitle>
+      <AssignedStatusRadialChart />
+    </div>
+  );
+}
+
+function AssignedTaskListCard({ isSelected, onSelect }: { isSelected: boolean; onSelect: () => void }) {
+  const [expandedWeek, setExpandedWeek] = useState<AssignedTaskWeek | null>(null);
+  const [expandedStudentByWeek, setExpandedStudentByWeek] = useState<Record<AssignedTaskWeek, string | null>>({
+    "this-week": null,
+    "last-week": null,
+  });
+  const weekItems: Array<{ key: AssignedTaskWeek; title: string }> = [
+    { key: "this-week", title: "This Week" },
+    { key: "last-week", title: "Last Week" },
+  ];
+
+  function getTaskStudent(name: string) {
+    return studentDirectory.find((student) => student.name === name);
+  }
+
+  function getStudentTaskGroups(rows: (typeof assignedTaskRowsByWeek)[AssignedTaskWeek]) {
+    return rows.reduce<Array<{ recipient: string; rows: typeof rows }>>((groups, row) => {
+      const group = groups.find((item) => item.recipient === row.recipient);
+      if (group) {
+        group.rows.push(row);
+      } else {
+        groups.push({ recipient: row.recipient, rows: [row] });
+      }
+      return groups;
+    }, []);
+  }
+
+  function getAssignedTaskResourceType(taskType: string): ResourceType {
+    return taskType === "Writing prompt" ? "Writing" : (taskType as ResourceType);
+  }
+
+  function getWeekTaskSummary(rows: (typeof assignedTaskRowsByWeek)[AssignedTaskWeek]) {
+    const completed = rows.filter((row) => row.status === "Completed").length;
+    const inProgress = rows.filter((row) => row.status === "In Progress").length;
+    const notStarted = rows.filter((row) => row.status === "Not Started").length;
+    return `${completed} completed | ${inProgress} in progress | ${notStarted} not started`;
+  }
+
+  function getWeekDateRange(rows: (typeof assignedTaskRowsByWeek)[AssignedTaskWeek]) {
+    const days = rows.map((row) => row.sentAt.split(",")[0]);
+    return `${days[0]} - ${days[days.length - 1]}`;
+  }
+
+  function renderTaskTable(rows: (typeof assignedTaskRowsByWeek)[AssignedTaskWeek]) {
+    return (
+      <div className="assigned-task-table" role="table" aria-label="Assigned task list">
+        <div className="assigned-task-table-head" role="row">
+          <span role="columnheader">Task</span>
+          <span role="columnheader">Submitted</span>
+          <span role="columnheader">Status</span>
+          <span role="columnheader">Action</span>
+        </div>
+        {rows.map((row) => (
+          <div className="assigned-task-table-row" role="row" key={row.id}>
+            <strong className="assigned-task-name" role="cell">
+              <TypeFilterIcon type={getAssignedTaskResourceType(row.taskType)} />
+              <span>{row.taskName}</span>
+            </strong>
+            <span role="cell">{row.submittedAt}</span>
+            <span role="cell">
+              <Badge variant="secondary" className="assigned-task-status" data-status={row.status}>
+                {row.status}
+              </Badge>
+            </span>
+            <Button type="button" variant="outline" size="sm" className="assigned-task-feedback-button">
+              Feedback
+            </Button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <Card
+      className="assigned-task-list-card"
+      data-selected={isSelected}
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
+    >
+      <CardContent>
+        {isSelected ? (
+          <>
+            <CardTitle>Task List</CardTitle>
+            <div className="assigned-task-week-list">
+              {weekItems.map((week) => {
+                const rows = assignedTaskRowsByWeek[week.key];
+                const isExpanded = expandedWeek === week.key;
+                const studentGroups = getStudentTaskGroups(rows);
+
+                return (
+                  <section className="assigned-task-week-card" data-expanded={isExpanded} key={week.key}>
+                    <button
+                      type="button"
+                      className="assigned-task-week-toggle"
+                      aria-expanded={isExpanded}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setExpandedWeek((current) => (current === week.key ? null : week.key));
+                      }}
+                    >
+                      <span>
+                        <strong>{week.title}</strong>
+                        <em>{getWeekTaskSummary(rows)}</em>
+                      </span>
+                      <time>{getWeekDateRange(rows)}</time>
+                      <ChevronRight size={18} />
+                    </button>
+                    {isExpanded && (
+                      <div className="assigned-task-student-list">
+                        {studentGroups.map((studentGroup) => {
+                          const student = getTaskStudent(studentGroup.recipient);
+                          const completedCount = studentGroup.rows.filter((row) => row.status === "Completed").length;
+                          const isStudentExpanded = expandedStudentByWeek[week.key] === studentGroup.recipient;
+
+                          return (
+                            <section className="assigned-task-student-card" data-expanded={isStudentExpanded} key={studentGroup.recipient}>
+                              <button
+                                type="button"
+                                className="assigned-task-student-toggle"
+                                aria-expanded={isStudentExpanded}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setExpandedStudentByWeek((current) => ({
+                                    ...current,
+                                    [week.key]: current[week.key] === studentGroup.recipient ? null : studentGroup.recipient,
+                                  }));
+                                }}
+                              >
+                                <span className="assigned-task-student-avatar">
+                                  {student?.avatarImage ? <img src={student.avatarImage} alt="" /> : getInitials(studentGroup.recipient)}
+                                </span>
+                                <span className="assigned-task-student-copy">
+                                  <strong>{studentGroup.recipient}</strong>
+                                  <em>
+                                    {completedCount}/{studentGroup.rows.length} completed
+                                  </em>
+                                </span>
+                                <ChevronRight size={16} />
+                              </button>
+                              {isStudentExpanded && renderTaskTable(studentGroup.rows)}
+                            </section>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="assigned-task-preview">
+            <img src={`${import.meta.env.BASE_URL}myclass-icons/tasklist.png`} alt="" />
+            <div className="assigned-task-summary-row">
+              <AssignedTaskWeekSummary title="This Week" />
+              <AssignedTaskWeekSummary title="Last Week" />
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+type AssignWorkflowStep = 1 | 2 | 3;
+type AssignContentType = "Reading" | "Video" | "Podcast" | "Writing prompt";
+type AssignMultiSelectOption = "All" | string;
+
+const assignContentOptions: Array<{ type: AssignContentType; label: string }> = [
+  { type: "Reading", label: "Reading" },
+  { type: "Video", label: "Video" },
+  { type: "Podcast", label: "Podcast" },
+  { type: "Writing prompt", label: "Writing prompt" },
+];
+
+const assignGenreOptions = [
+  "All",
+  "Fiction",
+  "Short Story",
+  "Informational Text",
+  "Biography",
+  "Opinion",
+  "Science Fiction",
+  "News",
+  "Fantasy",
+];
+
+const assignTopicOptions = ["All", "Science", "Chinese Arts", "Amphibians", "Social Studies"];
+
+function AssignMultiSelect({
+  label,
+  options,
+  values,
+  open,
+  onOpenChange,
+  onChange,
+  helper,
+}: {
+  label: string;
+  options: string[];
+  values: string[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onChange: (values: string[]) => void;
+  helper?: string;
+}) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        onOpenChange(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [onOpenChange, open]);
+
+  function selectOption(option: AssignMultiSelectOption) {
+    if (option === "All") {
+      onChange(["All"]);
+      return;
+    }
+
+    const current = values.includes("All") ? [] : values;
+    const nextValues = current.includes(option)
+      ? current.filter((value) => value !== option)
+      : [...current, option];
+    onChange(nextValues.length === 0 ? ["All"] : nextValues);
+  }
+
+  function removeOption(option: string) {
+    onChange(values.filter((value) => value !== option));
+  }
+
+  return (
+    <div className="assign-multi-select" data-open={open} ref={rootRef}>
+      <button
+        type="button"
+        className="assign-multi-trigger"
+        aria-expanded={open}
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpenChange(!open);
+        }}
+      >
+        <span className="assign-required">*</span>
+        <strong>{label}</strong>
+        {helper && <em>{helper}</em>}
+      </button>
+      <div
+        role="button"
+        tabIndex={0}
+        className="assign-multi-value"
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpenChange(!open);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            event.stopPropagation();
+            onOpenChange(!open);
+          }
+        }}
+      >
+        {values.length > 0 ? (
+          values.map((value) => (
+            <Badge key={value} variant="secondary" className="assign-multi-badge">
+              <span>{value}</span>
+              <span
+                role="button"
+                tabIndex={0}
+                className="assign-multi-remove"
+                aria-label={`Remove ${value}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  removeOption(value);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    removeOption(value);
+                  }
+                }}
+              >
+                <X size={12} />
+              </span>
+            </Badge>
+          ))
+        ) : (
+          <span className="assign-multi-placeholder">Select {label.toLowerCase()}</span>
+        )}
+      </div>
+      {open && (
+        <div className="assign-multi-menu">
+          {options.map((option) => (
+            <button
+              key={option}
+              type="button"
+              data-selected={values.includes(option)}
+              onClick={(event) => {
+                event.stopPropagation();
+                selectOption(option);
+              }}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AssignWorkflowPanel() {
+  const [step, setStep] = useState<AssignWorkflowStep>(1);
+  const [taskCounts, setTaskCounts] = useState<Record<AssignContentType, number>>({
+    Reading: 0,
+    Video: 0,
+    Podcast: 0,
+    "Writing prompt": 0,
+  });
+  const [selectedStudentIds, setSelectedStudentIds] = useState(() => studentDirectory.slice(0, 8).map((student) => student.id));
+  const [keyword, setKeyword] = useState("");
+  const [selectedGenres, setSelectedGenres] = useState<string[]>(["All"]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(["All"]);
+  const [genreOpen, setGenreOpen] = useState(false);
+  const [topicOpen, setTopicOpen] = useState(false);
+  const [validationMessage, setValidationMessage] = useState("");
+
+  const selectedStudents = studentDirectory.filter((student) => selectedStudentIds.includes(student.id));
+  const selectedTaskTypes = assignContentOptions.filter((item) => taskCounts[item.type] > 0).map((item) => item.type);
+  const hasSelectedTaskType = selectedTaskTypes.length > 0;
+  const hasSelectedStudents = selectedStudentIds.length > 0;
+  const canGoNext = step === 1 ? hasSelectedTaskType : step === 2 ? hasSelectedStudents : true;
+  const matchTaskTypes = selectedTaskTypes.length > 0 ? selectedTaskTypes : assignContentOptions.map((item) => item.type);
+  function getAssignResourceType(taskType: AssignContentType): ResourceType {
+    return taskType === "Writing prompt" ? "Writing" : taskType;
+  }
+
+  const matchedRows = selectedStudents.map((student, index) => {
+    const taskType = matchTaskTypes[index % matchTaskTypes.length];
+    const resourceType = getAssignResourceType(taskType);
+    const matchingResources = resources.filter((item) => item.type === resourceType);
+    const resource = matchingResources[index % matchingResources.length] ?? resources[(index + 1) % resources.length];
+    return {
+      student,
+      resource,
+      taskType,
+      matchedLexile: Math.max(400, Math.min(1200, student.lexile + ((index % 3) - 1) * 30)),
+    };
+  });
+
+  function getAssignMatchLength(row: (typeof matchedRows)[number]) {
+    if (row.taskType === "Reading" && "wordCount" in row.resource) return `${row.resource.wordCount.toLocaleString()} words`;
+    if ((row.taskType === "Video" || row.taskType === "Podcast") && "duration" in row.resource) return row.resource.duration;
+    return "-";
+  }
+
+  function getAssignMatchTypeLabel(taskType: AssignContentType) {
+    return taskType === "Writing prompt" ? "Writing" : taskType;
+  }
+
+  function toggleStudent(studentId: string) {
+    setValidationMessage("");
+    setSelectedStudentIds((current) =>
+      current.includes(studentId) ? current.filter((id) => id !== studentId) : [...current, studentId],
+    );
+  }
+
+  function toggleAllStudents() {
+    setValidationMessage("");
+    setSelectedStudentIds((current) => (current.length === studentDirectory.length ? [] : studentDirectory.map((student) => student.id)));
+  }
+
+  function toggleContentType(type: AssignContentType) {
+    setValidationMessage("");
+    setTaskCounts((current) => ({
+      ...current,
+      [type]: current[type] > 0 ? 0 : 1,
+    }));
+  }
+
+  function changeTaskCount(type: AssignContentType, delta: number) {
+    setValidationMessage("");
+    setTaskCounts((current) => ({
+      ...current,
+      [type]: current[type] === 0 && delta < 0 ? 0 : Math.max(1, Math.min(9, current[type] + delta)),
+    }));
+  }
+
+  function getStepValidationMessage(targetStep?: AssignWorkflowStep) {
+    if (targetStep) {
+      if (targetStep > 1 && !hasSelectedTaskType) return "Select at least one content type.";
+      if (targetStep > 2 && !hasSelectedStudents) return "Select at least one student.";
+      return "";
+    }
+
+    if (step === 1 && !hasSelectedTaskType) return "Select at least one content type.";
+    if (step === 2 && !hasSelectedStudents) return "Select at least one student.";
+    return "";
+  }
+
+  function goToStep(nextStep: AssignWorkflowStep) {
+    const message = getStepValidationMessage(nextStep);
+    if (message) {
+      setValidationMessage(message);
+      return;
+    }
+
+    setValidationMessage("");
+    setStep(nextStep);
+  }
+
+  function goNext() {
+    const message = getStepValidationMessage();
+    if (message) {
+      setValidationMessage(message);
+      return;
+    }
+
+    setValidationMessage("");
+    setStep((current) => (current + 1) as AssignWorkflowStep);
+  }
+
+  return (
+    <div className="assign-workflow">
+      <div className="assign-stepper" aria-label="Assign steps">
+        {[
+          [1, "Task Info"],
+          [2, "Students"],
+          [3, "Confirm"],
+        ].map(([itemStep, label]) => (
+          <button
+            key={itemStep}
+            type="button"
+            data-active={step === itemStep}
+            aria-disabled={Boolean(getStepValidationMessage(itemStep as AssignWorkflowStep))}
+            onClick={(event) => {
+              event.stopPropagation();
+              goToStep(itemStep as AssignWorkflowStep);
+            }}
+          >
+            <span>{itemStep}</span>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="assign-workflow-body">
+        {step === 1 && (
+          <div className="assign-step-panel assign-task-info">
+            <div className="assign-field-head">
+              <strong>Content type</strong>
+              <span>Supports multiple selection</span>
+            </div>
+            <div className="assign-content-type-list">
+              {assignContentOptions.map((item) => {
+                const count = taskCounts[item.type];
+                return (
+                  <div
+                    key={item.type}
+                    className="assign-content-type-row"
+                    data-enabled={count > 0}
+                    data-type={getAssignResourceType(item.type)}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleContentType(item.type)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        toggleContentType(item.type);
+                      }
+                    }}
+                  >
+                    <TypeFilterIcon type={getAssignResourceType(item.type)} />
+                    <span>{getAssignMatchTypeLabel(item.type)}</span>
+                    <div className="assign-content-count" aria-label={`${getAssignMatchTypeLabel(item.type)} quantity`}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          changeTaskCount(item.type, -1);
+                        }}
+                      >
+                        -
+                      </Button>
+                      <strong>{count}</strong>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          changeTaskCount(item.type, 1);
+                        }}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="assign-filter-grid">
+              <AssignMultiSelect
+                label="Genre"
+                helper="Supports multiple selection"
+                options={assignGenreOptions}
+                values={selectedGenres}
+                open={genreOpen}
+                onOpenChange={(nextOpen) => {
+                  setGenreOpen(nextOpen);
+                  if (nextOpen) setTopicOpen(false);
+                }}
+                onChange={setSelectedGenres}
+              />
+              <AssignMultiSelect
+                label="Topic"
+                options={assignTopicOptions}
+                values={selectedTopics}
+                open={topicOpen}
+                onOpenChange={(nextOpen) => {
+                  setTopicOpen(nextOpen);
+                  if (nextOpen) setGenreOpen(false);
+                }}
+                onChange={setSelectedTopics}
+              />
+              <label>
+                <span>Key Words</span>
+                <Input value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="Enter keywords" />
+              </label>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="assign-step-panel assign-student-picker">
+            <div className="assign-student-chip-grid">
+              <button
+                type="button"
+                className="assign-student-select-all"
+                data-selected={selectedStudentIds.length === studentDirectory.length}
+                onClick={toggleAllStudents}
+              >
+                <span className="assign-select-all-mark">All</span>
+                <span>select all</span>
+              </button>
+              {studentDirectory.map((student) => {
+                const selected = selectedStudentIds.includes(student.id);
+                return (
+                  <button key={student.id} type="button" data-selected={selected} onClick={() => toggleStudent(student.id)}>
+                    <img src={student.avatarImage} alt="" />
+                    <span>{student.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="assign-step-panel assign-match-review">
+            <div className="assign-match-table">
+              <div className="assign-match-head">
+                <strong>Student</strong>
+                <strong>Student/Task</strong>
+                <strong>Type</strong>
+                <strong>Content</strong>
+                <strong>Length</strong>
+                <strong>Genre</strong>
+                <strong>Rematch</strong>
+              </div>
+              <div className="assign-match-body">
+                {matchedRows.map((row) => (
+                  <div className="assign-match-row" key={row.student.id}>
+                    <span>{row.student.name}</span>
+                    <span className="assign-match-lexile">{row.student.lexile}L/{row.matchedLexile}L</span>
+                    <span className="assign-match-type">{getAssignMatchTypeLabel(row.taskType)}</span>
+                    <span className="assign-match-title" title={row.resource.title}>{row.resource.title}</span>
+                    <span className="assign-match-length">{getAssignMatchLength(row)}</span>
+                    <span className="assign-match-genre" title={row.resource.genre}>{row.resource.genre}</span>
+                    <Button type="button" variant="ghost" size="icon-sm" aria-label={`Rematch ${row.student.name}`}>
+                      <RefreshCw size={16} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="assign-workflow-footer">
+        {validationMessage && <span className="assign-validation-message">{validationMessage}</span>}
+        <Button type="button" variant="outline" disabled={step === 1} onClick={() => setStep((current) => (current - 1) as AssignWorkflowStep)}>
+          Back
+        </Button>
+        {step < 3 ? (
+          <Button type="button" aria-disabled={!canGoNext} data-disabled={!canGoNext} onClick={goNext}>
+            Next
+          </Button>
+        ) : (
+          <Button type="button">Assign</Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type FeedbackQueueRow = {
+  id: string;
+  student: Student;
+  task: Student["tasks"][number];
+  submittedAt: string;
+};
+
+function FeedbackReviewDialog({ row, onClose }: { row: FeedbackQueueRow; onClose: () => void }) {
+  const [taskCollapsed, setTaskCollapsed] = useState(true);
+  const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
+  const quizQuestions = [
+    {
+      question: "Which of the following best summarizes the main idea of the passage?",
+      selected: "C",
+      correct: "C",
+      options: [
+        ["A", "Basketball's international popularity has surpassed that of American football."],
+        ["B", "Basketball rules have remained unchanged since its invention."],
+        ["C", "Basketball originated in the United States and evolved over time into a global sport with important historical milestones."],
+        ["D", "The YMCA is no longer involved in basketball activities."],
+      ],
+    },
+    {
+      question: "Why was basketball first created as an indoor activity?",
+      selected: "A",
+      correct: "A",
+      options: [
+        ["A", "To keep students active during cold weather."],
+        ["B", "To replace baseball in the summer."],
+        ["C", "To prepare athletes for professional leagues."],
+        ["D", "To teach students how to build gym equipment."],
+      ],
+    },
+    {
+      question: "What helped basketball become popular around the world?",
+      selected: "D",
+      correct: "B",
+      options: [
+        ["A", "The game stopped changing after the first rules were written."],
+        ["B", "New rules, faster play, and wider media coverage helped the sport grow."],
+        ["C", "Only one school was allowed to teach the game."],
+        ["D", "The sport became slower and easier to broadcast."],
+      ],
+    },
+    {
+      question: "Which detail from the passage supports the idea that basketball changed over time?",
+      selected: "B",
+      correct: "B",
+      options: [
+        ["A", "Basketball was always played outdoors."],
+        ["B", "New rules were added to make the game faster."],
+        ["C", "The game was never shown in media."],
+        ["D", "Students stopped playing the game after winter."],
+      ],
+    },
+    {
+      question: "What is the author's purpose in the passage?",
+      selected: "A",
+      correct: "A",
+      options: [
+        ["A", "To explain how basketball began and became a global sport."],
+        ["B", "To argue that basketball should have fewer rules."],
+        ["C", "To compare every major sport in the United States."],
+        ["D", "To describe one famous basketball player."],
+      ],
+    },
+    {
+      question: "What should the student review next?",
+      selected: "D",
+      correct: "C",
+      options: [
+        ["A", "How to spell the names of basketball teams."],
+        ["B", "How to calculate basketball scores."],
+        ["C", "How rule changes solved specific problems in the sport."],
+        ["D", "How fan-shaped backboards improved visibility."],
+      ],
+    },
+  ];
+  const activeQuestion = quizQuestions[activeQuestionIndex];
+  const chatMessages = [
+    {
+      id: "m-1",
+      text: `Nice work, ${row.student.name.split(" ")[0]}. You found the main idea and used details from the passage clearly.`,
+      time: "2026-03-26 13:12",
+    },
+    {
+      id: "m-2",
+      text: "For the missed question, reread the sentence that explains what problem the rule change solved. Then connect the answer to that problem.",
+      time: "2026-03-26 13:15",
+    },
+  ];
+
+  return (
+    <div className="feedback-backdrop" role="dialog" aria-modal="true" aria-label={`Feedback for ${row.student.name}`}>
+      <Card className="feedback-review-dialog">
+        <CardHeader>
+          <div>
+            <CardDescription>
+              {row.student.name} · Submitted {row.submittedAt}
+            </CardDescription>
+            <CardTitle>{row.task.title}</CardTitle>
+          </div>
+          <CardAction>
+            <Button variant="ghost" size="icon-sm" aria-label="Close feedback" onClick={onClose}>
+              <X size={18} />
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="feedback-review-layout">
+          <section className="feedback-review-left">
+            <Card className="feedback-task-card" data-collapsed={taskCollapsed}>
+              <CardContent>
+                <button type="button" className="feedback-task-toggle" onClick={() => setTaskCollapsed((current) => !current)}>
+                  <span>{row.task.title}</span>
+                  <ChevronRight size={18} />
+                </button>
+                <div className="feedback-task-detail" aria-hidden={taskCollapsed}>
+                  <div className="feedback-resource-meta">
+                    <Badge variant="secondary">820L</Badge>
+                    <Badge variant="outline">{row.task.resourceType}</Badge>
+                    <Badge variant="outline">Informational Text</Badge>
+                  </div>
+                  <h3>History of Basketball</h3>
+                  <p>
+                    Basketball began as an indoor activity designed to keep students active during cold weather. Over time, the game
+                    changed through new rules, faster play, and wider media coverage. These changes helped basketball grow from a local
+                    gym class activity into a sport played and watched around the world.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="feedback-answer-card">
+              <CardContent>
+                <div className="feedback-quiz-tabs" aria-label="Quiz questions">
+                  {quizQuestions.map((question, index) => (
+                    <button
+                      type="button"
+                      key={question.question}
+                      data-state={question.selected === question.correct ? "correct" : "missed"}
+                      data-active={activeQuestionIndex === index}
+                      onClick={() => setActiveQuestionIndex(index)}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+                <h3>
+                  <span>Question {activeQuestionIndex + 1}</span>
+                  {activeQuestion.question}
+                </h3>
+                <div className="feedback-answer-list">
+                  {activeQuestion.options.map(([letter, text]) => {
+                    const isSelected = activeQuestion.selected === letter;
+                    const isCorrect = activeQuestion.correct === letter;
+                    return (
+                      <div
+                        className="feedback-answer-option"
+                        data-selected={isSelected}
+                        data-correct={isCorrect}
+                        data-wrong={isSelected && !isCorrect}
+                        key={letter}
+                      >
+                        <strong>{letter}</strong>
+                        <span>{text}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+
+          <aside className="feedback-review-right">
+            <Card className="feedback-chat-card">
+              <CardContent>
+                <div className="feedback-chat-list">
+                  {chatMessages.map((message) => (
+                    <div className="feedback-chat-message" key={message.id}>
+                      <span>{message.time}</span>
+                      <p>{message.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="feedback-input-card">
+              <CardContent>
+                <textarea placeholder="Write feedback to the student..." />
+              </CardContent>
+              <CardFooter>
+                <Button variant="outline" size="icon" aria-label="Record voice feedback">
+                  <Mic size={18} />
+                </Button>
+                <Button>
+                  <Send size={18} />
+                  Send
+                </Button>
+              </CardFooter>
+            </Card>
+          </aside>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function FeedbackQueuePanel({ onOpenFeedback }: { onOpenFeedback: (row: FeedbackQueueRow) => void }) {
+  const feedbackRows = classes[0].students.flatMap((student, studentIndex) =>
+    student.tasks
+      .filter((task) => task.status === "In progress")
+      .map((task, taskIndex) => ({
+        id: `${student.id}-${task.id}`,
+        student,
+        task,
+        submittedAt: `Today ${9 + ((studentIndex + taskIndex) % 7)}:${String((studentIndex * 11 + taskIndex * 17) % 60).padStart(2, "0")}`,
+      })),
+  );
+
+  return (
+    <div className="feedback-queue-panel">
+      <div className="feedback-queue-head">
+        <strong>In Progress Feedback</strong>
+        <span>{feedbackRows.length} tasks</span>
+      </div>
+
+      {feedbackRows.length > 0 ? (
+        <div className="feedback-queue-table">
+          <div className="feedback-queue-table-head">
+            <strong>Student</strong>
+            <strong>Task</strong>
+            <strong>Submitted</strong>
+            <strong>Feedback</strong>
+          </div>
+          <div className="feedback-queue-table-body">
+            {feedbackRows.map((row) => (
+              <div className="feedback-queue-row" key={row.id}>
+                <span>{row.student.name}</span>
+                <span>{row.task.title}</span>
+                <span>{row.submittedAt}</span>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onOpenFeedback(row);
+                  }}
+                >
+                  Feedback
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="feedback-empty-state">
+          <strong>All feedback is complete</strong>
+          <span>No in progress tasks are waiting for feedback.</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AssignedTaskSection({
+  onOpenTaskStudent,
+}: {
+  onOpenTaskStudent: (student: StudentDetailStudent, tab?: StudentDetailTab) => void;
+}) {
+  const [selectedAssignedPanel, setSelectedAssignedPanel] = useState<"assign" | "tasks">("assign");
 
   return (
     <section className="assigned-dashboard">
-      <aside className="assigned-sidebar" aria-label="Assigned task actions">
-        <Card className="assign-hero-card">
-          <CardContent>
-            <span className="assign-hero-icon">
-              <ClipboardPlus size={46} />
-            </span>
-            <div>
-              <CardTitle>Assign Task</CardTitle>
-              <CardDescription>Choose content and assign to students in a few simple steps.</CardDescription>
-            </div>
-            <Button variant="secondary" size="lg" className="assign-new-task-button">
-              Assign New Task
-              <ChevronRight size={22} />
-            </Button>
-            <BookOpen className="assign-hero-watermark" size={150} strokeWidth={1.65} aria-hidden="true" />
-          </CardContent>
-        </Card>
-
-        <Card className="feedback-summary-card">
-          <CardContent>
-            <div className="feedback-heading">
-              <span>
-                <MessageSquareText size={30} />
-              </span>
-              <div>
-                <CardTitle>Feedback</CardTitle>
-                <CardDescription>Review and provide feedback to help students improve and stay on track.</CardDescription>
-              </div>
-            </div>
-            <div className="feedback-action-grid">
-              <Button variant="outline" className="feedback-action-button">
-                <UsersRound size={30} />
-                <span>
-                  <strong>Whole Class</strong>
-                  <small>Review all pending feedback</small>
-                </span>
-              </Button>
-              <Button variant="outline" className="feedback-action-button">
-                <UsersRound size={30} />
-                <span>
-                  <strong>Single Student</strong>
-                  <small>View all tasks for one student</small>
-                </span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="assigned-notice-card" data-tone="alert">
-          <CardContent>
-            <AlertTriangle size={42} />
-            <div>
-              <CardTitle>Attention Needed</CardTitle>
-              <CardDescription>3 students have overdue tasks</CardDescription>
-            </div>
-            <ChevronRight size={24} />
-          </CardContent>
-        </Card>
-
-        <Card className="assigned-notice-card" data-tone="reminder">
-          <CardContent>
-            <Bell size={42} />
-            <div>
-              <CardTitle>Reminder</CardTitle>
-              <CardDescription>You have 12 submissions waiting for feedback.</CardDescription>
-            </div>
-            <ChevronRight size={24} />
-          </CardContent>
-        </Card>
-      </aside>
-
-      <Card className="assigned-main-panel">
-        <CardContent>
-          <div className="assigned-toolbar">
-            <Select value={taskPeriod} onValueChange={(value) => value && setTaskPeriod(value)}>
-              <SelectTrigger className="assigned-select-trigger">
-                <CalendarDays size={20} />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {taskPeriods.map((period) => (
-                  <SelectItem key={period} value={period}>
-                    {period}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={classScope} onValueChange={(value) => value && setClassScope(value)}>
-              <SelectTrigger className="assigned-select-trigger compact">
-                <UsersRound size={20} />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {assignedClassScopes.map((scope) => (
-                  <SelectItem key={scope} value={scope}>
-                    {scope}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <section
-            className="assigned-bento-grid"
-            data-expanded={expandedCardId ? "true" : "false"}
-            aria-label="Assigned task dashboard cards"
+      <div className="assigned-overview-grid" aria-label="Assigned task overview">
+        <div className="assigned-work-area" data-selected={selectedAssignedPanel}>
+          <Card
+            className="assign-hero-card assigned-overview-card task-mode-card"
+            data-selected={selectedAssignedPanel === "assign"}
+            role="button"
+            tabIndex={0}
+            onClick={() => setSelectedAssignedPanel("assign")}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setSelectedAssignedPanel("assign");
+              }
+            }}
           >
-            {assignedBentoCards.map((card) => (
-              <AssignedBentoCard
-                key={card.id}
-                card={card}
-                isExpanded={expandedCardId === card.id}
-                isAnyExpanded={expandedCardId !== null}
-                onToggle={() => setExpandedCardId((currentId) => (currentId === card.id ? null : card.id))}
-              />
-            ))}
-          </section>
-        </CardContent>
-      </Card>
+            <CardContent>
+              {selectedAssignedPanel === "assign" ? (
+                <AssignWorkflowPanel />
+              ) : (
+                <span className="task-mode-preview">
+                  <img src={`${import.meta.env.BASE_URL}myclass-icons/assign.png`} alt="" />
+                  <span data-tone="assign">ASSIGN<br />TASK</span>
+                </span>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="assigned-task-list-area">
+            <AssignedTaskListCard isSelected={selectedAssignedPanel === "tasks"} onSelect={() => setSelectedAssignedPanel("tasks")} />
+          </div>
+        </div>
+
+        <div className="leaderboard-area">
+          <LeaderboardCard onOpenStudent={onOpenTaskStudent} />
+        </div>
+      </div>
     </section>
   );
 }
 
-function LexileTrendChart() {
+function LexileTrendChart({ studentName = "Aaliyah Johnson" }: { studentName?: string }) {
   const width = 720;
   const height = 320;
   const padding = { top: 34, right: 72, bottom: 46, left: 62 };
@@ -1925,15 +3350,15 @@ function LexileTrendChart() {
       <CardHeader>
         <CardTitle>
           <ListChecks size={22} />
-          Student Lexile / AR Trend
+          Student Report Trend
         </CardTitle>
         <CardAction>
-          <Select defaultValue="Aaliyah Johnson">
+          <Select defaultValue={studentName}>
             <SelectTrigger className="lexile-student-select">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {["Aaliyah Johnson", "Sophia Patel", "Ethan Kim", "Mia Rodriguez"].map((name) => (
+              {lexileLeaderboard.slice(0, 5).map(({ name }) => (
                 <SelectItem key={name} value={name}>
                   {name}
                 </SelectItem>
@@ -1947,7 +3372,7 @@ function LexileTrendChart() {
           <span data-tone="green">Lexile (L)</span>
           <span data-tone="purple">AR Level</span>
         </div>
-        <svg className="lexile-trend-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Student Lexile and AR trend">
+        <svg className="lexile-trend-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Student report trend">
           <text x="10" y="24" className="chart-axis-title">
             Lexile (L)
           </text>
@@ -1999,7 +3424,7 @@ function LexileTrendChart() {
   );
 }
 
-function LexileFocusCard() {
+function LexileFocusCard({ student = lexileLeaderboard[3] }: { student?: (typeof lexileLeaderboard)[number] }) {
   return (
     <Card className="lexile-focus-card">
       <CardHeader>
@@ -2014,26 +3439,27 @@ function LexileFocusCard() {
         </CardAction>
       </CardHeader>
       <CardContent>
-        <div className="focus-student">
-          <span className="focus-avatar">AJ</span>
-          <div>
-            <h3>Aaliyah Johnson</h3>
-            <p>
-              ID: 10023 <Badge variant="secondary">Class 7A</Badge>
-            </p>
-          </div>
-        </div>
         <Card className="focus-score-card">
           <CardContent>
             <div>
               <span>Current Lexile</span>
-              <strong>1000L</strong>
-              <small>+120L this term</small>
+              <strong>{student.lexile}L</strong>
+              <small>+{student.trend}L this term</small>
             </div>
             <div>
               <span>Current AR</span>
-              <strong>5.1</strong>
+              <strong>{student.ar}</strong>
               <small>+0.6 this term</small>
+            </div>
+            <div>
+              <span>Lexile Growth</span>
+              <strong>+{student.trend}L</strong>
+              <small>This semester</small>
+            </div>
+            <div>
+              <span>Reading Accuracy</span>
+              <strong>{student.accuracy}%</strong>
+              <small>Latest average</small>
             </div>
           </CardContent>
         </Card>
@@ -2056,6 +3482,70 @@ function LexileFocusCard() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function StudentReportLineChart({
+  label,
+  unit,
+  data,
+  tone,
+}: {
+  label: string;
+  unit: string;
+  data: Array<{ label: string; value: number }>;
+  tone: "green" | "amber" | "blue" | "purple";
+}) {
+  const width = 360;
+  const height = 210;
+  const padding = { top: 28, right: 24, bottom: 34, left: 46 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const values = data.map((item) => item.value);
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const range = Math.max(1, maxValue - minValue);
+  const yMin = Math.max(0, Math.floor((minValue - range * 0.18) / 10) * 10);
+  const yMax = Math.ceil((maxValue + range * 0.18) / 10) * 10;
+  const yRange = Math.max(1, yMax - yMin);
+  const xFor = (index: number) => padding.left + (chartWidth / (data.length - 1)) * index;
+  const yFor = (value: number) => padding.top + chartHeight - ((value - yMin) / yRange) * chartHeight;
+  const points = data.map((item, index) => ({ ...item, x: xFor(index), y: yFor(item.value) }));
+  const pointString = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const ticks = [yMin, Math.round((yMin + yMax) / 2), yMax];
+
+  return (
+    <div className="student-report-chart" data-tone={tone}>
+      <div className="student-report-chart-head">
+        <span>{label}</span>
+        <em>{unit}</em>
+      </div>
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${label} trend`}>
+        {ticks.map((tick) => {
+          const y = yFor(tick);
+          return (
+            <g key={tick}>
+              <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} className="student-report-grid-line" />
+              <text x={padding.left - 10} y={y + 4} textAnchor="end" className="student-report-tick">
+                {tick.toLocaleString()}
+              </text>
+            </g>
+          );
+        })}
+        <polyline points={pointString} className="student-report-line" />
+        {points.map((point) => (
+          <g key={point.label}>
+            <circle cx={point.x} cy={point.y} r="4.5" className="student-report-point" />
+            <text x={point.x} y={point.y - 10} textAnchor="middle" className="student-report-value">
+              {point.value.toLocaleString()}
+            </text>
+            <text x={point.x} y={height - 12} textAnchor="middle" className="student-report-label">
+              {point.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
   );
 }
 
@@ -2088,192 +3578,378 @@ function LexileStatStrip() {
   );
 }
 
-function LexileSideInsights() {
-  return (
-    <div className="lexile-side-stack">
-      <Card className="reading-insights-card">
-        <CardHeader>
-          <CardTitle>
-            <CheckCircle2 size={22} />
-            Reading Insights
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {[
-            ["+85L", "Avg. Lexile growth this semester"],
-            ["78%", "Students on or above expected growth"],
-            ["8 students", "Need additional reading support"],
-          ].map(([value, label]) => (
-            <div key={value}>
-              <strong>{value}</strong>
-              <span>{label}</span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+function ClassDistributionContent({ title, data, xTitle }: { title: string; data: Array<{ label: string; value: number }>; xTitle: string }) {
+  const max = Math.max(...data.map((item) => item.value));
 
-      <Card className="top-growth-card">
+  return (
+    <>
+      <div className="class-bar-chart" role="img" aria-label={title}>
+        {data.map((item) => (
+          <div key={item.label}>
+            <strong>{item.value}</strong>
+            <i style={{ height: `${Math.max(10, (item.value / max) * 100)}%` }} />
+            <span>{item.label}</span>
+          </div>
+        ))}
+      </div>
+      <p className="class-bar-axis">{xTitle}</p>
+    </>
+  );
+}
+
+function LexileStudentDistributionChart() {
+  const width = 640;
+  const height = 270;
+  const padding = { top: 18, right: 20, bottom: 34, left: 52 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const minLexile = 300;
+  const maxLexile = 1500;
+  const expectedBand = { low: 900, high: 1110 };
+  const students = studentDirectory.slice(0, 9).map((student, index) => ({
+    name: student.name.split(" ")[0],
+    lexile: student.lexile,
+    x: padding.left + (plotWidth / 8) * index,
+  }));
+  const yFor = (value: number) => padding.top + plotHeight - ((value - minLexile) / (maxLexile - minLexile)) * plotHeight;
+  const ticks = [300, 600, 900, 1200, 1500];
+
+  return (
+    <div className="lexile-student-distribution" role="img" aria-label="Current class student Lexile distribution">
+      <svg viewBox={`0 0 ${width} ${height}`}>
+        {ticks.map((tick) => {
+          const y = yFor(tick);
+          return (
+            <g key={tick}>
+              <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} className="lexile-distribution-grid" />
+              <text x={padding.left - 10} y={y + 5} textAnchor="end" className="lexile-distribution-tick">
+                {tick.toLocaleString()}
+              </text>
+            </g>
+          );
+        })}
+
+        <rect
+          x={padding.left}
+          y={yFor(expectedBand.high)}
+          width={plotWidth}
+          height={yFor(expectedBand.low) - yFor(expectedBand.high)}
+          className="lexile-distribution-band"
+        />
+
+        {students.map((student, index) => {
+          const y = yFor(student.lexile);
+          const labelBelow = student.lexile >= 1120 || index % 3 === 0;
+          const labelY = labelBelow ? y + 26 : y - 28;
+
+          return (
+            <g key={student.name} className="lexile-distribution-student">
+              <circle cx={student.x} cy={y} r="9" />
+              <text x={student.x} y={labelY} textAnchor="middle">
+                <tspan x={student.x}>{student.name}</tspan>
+                <tspan x={student.x} dy="15">
+                  {student.lexile}L
+                </tspan>
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function ClassDistributionTabs() {
+  const [activeTab, setActiveTab] = useState<"lexile" | "ar">("lexile");
+
+  return (
+    <Card className="class-distribution-card lexile-distribution-tabs" data-tone={activeTab === "ar" ? "purple" : "green"}>
+      <CardHeader>
+        <CardTitle>
+          <ListChecks size={22} />
+          Current Class Distribution
+        </CardTitle>
+        <CardAction>
+          <div className="lexile-tab-control" role="tablist" aria-label="Distribution metric">
+            <button type="button" role="tab" aria-selected={activeTab === "lexile"} onClick={() => setActiveTab("lexile")}>
+              Lexile
+            </button>
+            <button type="button" role="tab" aria-selected={activeTab === "ar"} onClick={() => setActiveTab("ar")}>
+              AR
+            </button>
+          </div>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        {activeTab === "lexile" ? (
+          <LexileStudentDistributionChart />
+        ) : (
+          <ClassDistributionContent title="Current Class AR Distribution" data={arClassDistribution} xTitle="AR Level (ATOS)" />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LexileLeaderboardCard({
+  onOpenStudent,
+}: {
+  onOpenStudent: (student: StudentDetailStudent, tab?: StudentDetailTab) => void;
+}) {
+  const [activeMetric, setActiveMetric] = useState<"lexile" | "ar">("lexile");
+
+  return (
+    <Card className="lexile-leaderboard-card">
+      <CardHeader>
+        <CardTitle>
+          <Trophy size={22} />
+          Report Leaderboard
+        </CardTitle>
+        <CardAction>
+          <div className="lexile-tab-control" role="tablist" aria-label="Leaderboard metric">
+            <button type="button" role="tab" aria-selected={activeMetric === "lexile"} onClick={() => setActiveMetric("lexile")}>
+              Lexile
+            </button>
+            <button type="button" role="tab" aria-selected={activeMetric === "ar"} onClick={() => setActiveMetric("ar")}>
+              AR
+            </button>
+          </div>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <div className="lexile-leaderboard-head">
+          <span>#</span>
+          <span>Student</span>
+          <span>{activeMetric === "lexile" ? "Lexile (L)" : "AR Level"}</span>
+          <span>{activeMetric === "lexile" ? "Growth" : "AR Growth"}</span>
+          <span />
+        </div>
+        {lexileLeaderboard.map((student) => (
+          <div
+            className="lexile-leaderboard-row"
+            key={student.name}
+            role="button"
+            tabIndex={0}
+            onClick={() => onOpenStudent(getStudentDetailFromReportStudent(student), "report")}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onOpenStudent(getStudentDetailFromReportStudent(student), "report");
+              }
+            }}
+          >
+            <Badge variant="secondary" className="rank-badge" data-rank={student.rank}>
+              {student.rank}
+            </Badge>
+            <div className="leaderboard-student">
+              <span className="leaderboard-avatar" style={student.avatarImage ? undefined : { backgroundColor: student.color }}>
+                {student.avatarImage ? <img src={student.avatarImage} alt="" /> : student.avatar}
+              </span>
+              <strong>{student.name}</strong>
+            </div>
+            <span>{activeMetric === "lexile" ? `${student.lexile}L` : student.ar}</span>
+            <em>{activeMetric === "lexile" ? `+${student.trend}L` : "+0.6"}</em>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="leaderboard-detail-button"
+              aria-label={`View ${student.name} report details`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenStudent(getStudentDetailFromReportStudent(student), "report");
+              }}
+            >
+              <LeaderboardArrowIcon />
+            </Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function StudentReportPanel({ student }: { student: StudentDetailStudent }) {
+  const [timeRange, setTimeRange] = useState<"week" | "month">("month");
+  const monthLexileData = lexileTrend.map((item, index) => ({
+    label: item.label,
+    value: index === lexileTrend.length - 1 ? student.lexile : item.lexile,
+  }));
+  const weekLexileData = [
+    { label: "Mon", value: Math.max(400, student.lexile - 42) },
+    { label: "Tue", value: Math.max(400, student.lexile - 36) },
+    { label: "Wed", value: Math.max(400, student.lexile - 22) },
+    { label: "Thu", value: Math.max(400, student.lexile - 18) },
+    { label: "Fri", value: Math.max(400, student.lexile - 8) },
+    { label: "Sun", value: student.lexile },
+  ];
+  const reportData = {
+    month: {
+      lexile: monthLexileData,
+      readingTime: [
+        { label: "Jan", value: 82 },
+        { label: "Feb", value: 96 },
+        { label: "Mar", value: 104 },
+        { label: "Apr", value: 118 },
+        { label: "May", value: 126 },
+        { label: "Jun", value: 142 },
+      ],
+      readingWords: [
+        { label: "Jan", value: 8200 },
+        { label: "Feb", value: 9600 },
+        { label: "Mar", value: 10800 },
+        { label: "Apr", value: 12300 },
+        { label: "May", value: 13700 },
+        { label: "Jun", value: 15100 },
+      ],
+      writingWords: [
+        { label: "Jan", value: 960 },
+        { label: "Feb", value: 1180 },
+        { label: "Mar", value: 1340 },
+        { label: "Apr", value: 1510 },
+        { label: "May", value: 1680 },
+        { label: "Jun", value: 1890 },
+      ],
+    },
+    week: {
+      lexile: weekLexileData,
+      readingTime: [
+        { label: "Mon", value: 18 },
+        { label: "Tue", value: 22 },
+        { label: "Wed", value: 20 },
+        { label: "Thu", value: 26 },
+        { label: "Fri", value: 24 },
+        { label: "Sun", value: 32 },
+      ],
+      readingWords: [
+        { label: "Mon", value: 1380 },
+        { label: "Tue", value: 1640 },
+        { label: "Wed", value: 1510 },
+        { label: "Thu", value: 1880 },
+        { label: "Fri", value: 1760 },
+        { label: "Sun", value: 2140 },
+      ],
+      writingWords: [
+        { label: "Mon", value: 180 },
+        { label: "Tue", value: 220 },
+        { label: "Wed", value: 205 },
+        { label: "Thu", value: 260 },
+        { label: "Fri", value: 240 },
+        { label: "Sun", value: 300 },
+      ],
+    },
+  };
+  const activeData = reportData[timeRange];
+
+  return (
+    <div className="student-report-panel">
+      <div className="student-report-range" role="tablist" aria-label="Report time range">
+        <button type="button" role="tab" aria-selected={timeRange === "week"} onClick={() => setTimeRange("week")}>
+          Week
+        </button>
+        <button type="button" role="tab" aria-selected={timeRange === "month"} onClick={() => setTimeRange("month")}>
+          Month
+        </button>
+      </div>
+      <StudentReportLineChart label="Lexile" unit="L" data={activeData.lexile} tone="green" />
+      <StudentReportLineChart label="Reading Time" unit="min" data={activeData.readingTime} tone="amber" />
+      <StudentReportLineChart label="Reading Words" unit="words" data={activeData.readingWords} tone="blue" />
+      <StudentReportLineChart label="Writing Words" unit="words" data={activeData.writingWords} tone="purple" />
+    </div>
+  );
+}
+
+function StudentDetailDialog({
+  student,
+  initialTab,
+  onClose,
+}: {
+  student: StudentDetailStudent;
+  initialTab: StudentDetailTab;
+  onClose: () => void;
+}) {
+  const [activeTab, setActiveTab] = useState<StudentDetailTab>(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab, student.name]);
+
+  return (
+    <div className="feedback-backdrop" role="dialog" aria-modal="true" aria-label={`${student.name} details`}>
+      <Card className="student-detail-dialog">
         <CardHeader>
-          <CardTitle>
-            <ListChecks size={22} />
-            Top Growth (Lexile)
-          </CardTitle>
+          <div className="student-task-dialog-title">
+            <span className="leaderboard-avatar" style={student.avatarImage ? undefined : { backgroundColor: student.color }}>
+              {student.avatarImage ? <img src={student.avatarImage} alt="" /> : student.avatar}
+            </span>
+            <div>
+              <CardDescription>{student.readingLevel}L reading level</CardDescription>
+              <CardTitle>{student.name}</CardTitle>
+            </div>
+          </div>
+          <div className="student-detail-tabs" role="tablist" aria-label={`${student.name} detail sections`}>
+            <button type="button" role="tab" aria-selected={activeTab === "tasks"} onClick={() => setActiveTab("tasks")}>
+              <img src={`${import.meta.env.BASE_URL}myclass-icons/assigned-tasks.png`} alt="" />
+              Tasks
+            </button>
+            <button type="button" role="tab" aria-selected={activeTab === "report"} onClick={() => setActiveTab("report")}>
+              <img src={`${import.meta.env.BASE_URL}myclass-icons/lexile-ar.png`} alt="" />
+              Report
+            </button>
+          </div>
           <CardAction>
-            <ChevronRight size={20} />
+            <Button variant="ghost" size="icon-sm" aria-label="Close student details" onClick={onClose}>
+              <X size={18} />
+            </Button>
           </CardAction>
         </CardHeader>
-        <CardContent>
-          {[
-            ["1", "Ethan Kim", "+190L"],
-            ["2", "Mia Rodriguez", "+160L"],
-            ["3", "Liam Chen", "+140L"],
-          ].map(([rank, name, value]) => (
-            <div key={name}>
-              <Badge variant="secondary">{rank}</Badge>
-              <span className="leaderboard-avatar">{name.split(" ").map((part) => part[0]).join("")}</span>
-              <strong>{name}</strong>
-              <em>{value}</em>
-            </div>
-          ))}
+        <CardContent className="student-detail-dialog-content">
+          {activeTab === "tasks" ? <StudentTasksPanel student={student} /> : <StudentReportPanel student={student} />}
         </CardContent>
       </Card>
     </div>
   );
 }
 
-function ClassDistributionCard({
-  title,
-  subtitle,
-  data,
-  tone = "green",
-  xTitle,
+function LexileArSection({
+  onOpenStudent,
 }: {
-  title: string;
-  subtitle: string;
-  data: Array<{ label: string; value: number }>;
-  tone?: "green" | "purple";
-  xTitle: string;
+  onOpenStudent: (student: StudentDetailStudent, tab?: StudentDetailTab) => void;
 }) {
-  const max = Math.max(...data.map((item) => item.value));
-
-  return (
-    <Card className="class-distribution-card" data-tone={tone}>
-      <CardHeader>
-        <CardTitle>
-          <ListChecks size={22} />
-          {title}
-        </CardTitle>
-        <CardDescription>{subtitle}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="class-bar-chart" role="img" aria-label={title}>
-          {data.map((item) => (
-            <div key={item.label}>
-              <strong>{item.value}</strong>
-              <i style={{ height: `${Math.max(10, (item.value / max) * 100)}%` }} />
-              <span>{item.label}</span>
-            </div>
-          ))}
-        </div>
-        <p className="class-bar-axis">{xTitle}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function LexileLeaderboardCard() {
-  return (
-    <Card className="lexile-leaderboard-card">
-      <CardHeader>
-        <CardTitle>
-          <Trophy size={22} />
-          Lexile / AR Leaderboard
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="lexile-leaderboard-head">
-          <span>#</span>
-          <span>Student</span>
-          <span>Lexile (L)</span>
-          <span>AR Level</span>
-          <span>Trend</span>
-        </div>
-        {lexileLeaderboard.map((student) => (
-          <div className="lexile-leaderboard-row" data-active={student.rank === 4} key={student.name}>
-            <Badge variant="secondary" className="rank-badge" data-rank={student.rank}>
-              {student.rank}
-            </Badge>
-            <div className="leaderboard-student">
-              <span className="leaderboard-avatar" style={{ backgroundColor: student.color }}>
-                {student.avatar}
-              </span>
-              <strong>{student.name}</strong>
-            </div>
-            <span>{student.lexile}</span>
-            <span>{student.ar}</span>
-            <em>{student.trend}</em>
-          </div>
-        ))}
-      </CardContent>
-      <CardFooter>
-        <Button variant="ghost" className="status-detail-button">
-          View full leaderboard
-          <ChevronRight size={20} />
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-}
-
-function LexileArSection() {
   return (
     <section className="lexile-dashboard">
-      <LexileSideInsights />
-      <div className="lexile-main-grid">
-        <div className="lexile-trend-row">
-          <LexileTrendChart />
-          <LexileStatStrip />
-        </div>
-        <div className="lexile-bottom-grid">
-          <ClassDistributionCard
-            title="Current Class Lexile Distribution"
-            subtitle="82 students"
-            data={lexileClassDistribution}
-            xTitle="Lexile Range"
-          />
-          <ClassDistributionCard
-            title="Current Class AR Distribution"
-            subtitle="82 students"
-            data={arClassDistribution}
-            tone="purple"
-            xTitle="AR Level (ATOS)"
-          />
-          <LexileLeaderboardCard />
-        </div>
+      <div className="lexile-leaderboard-area">
+        <LexileLeaderboardCard onOpenStudent={onOpenStudent} />
       </div>
-      <LexileFocusCard />
-    </section>
-  );
-}
-
-function ReadingTimeSection() {
-  return (
-    <section className="student-dashboard">
-      <Card className="reading-placeholder-card">
-        <CardHeader>
-          <CardTitle>Reading Time / Words</CardTitle>
-          <CardDescription>Reading activity content area is ready for the next module.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p>18h 42m tracked this week with 245,680 total words.</p>
-        </CardContent>
-      </Card>
+      <div className="lexile-distribution-area">
+        <ClassDistributionTabs />
+      </div>
+      <div className="lexile-empty-area" aria-hidden="true" />
     </section>
   );
 }
 
 function ClassView() {
-  const [activeSection, setActiveSection] = useState<MyClassSection>("students");
+  const [activeSection, setActiveSection] = useState<MyClassSection>("assigned");
+  const [students, setStudents] = useState<StudentDirectoryEntry[]>(studentDirectory);
+  const [activeStudentDetail, setActiveStudentDetail] = useState<StudentDetailStudent | null>(null);
+  const [activeStudentDetailTab, setActiveStudentDetailTab] = useState<StudentDetailTab>("tasks");
+
+  function updateStudentLexileAr(studentId: string, values: Pick<StudentDirectoryEntry, "lexile" | "ar">) {
+    setStudents((currentStudents) =>
+      currentStudents.map((student) => (student.id === studentId ? { ...student, ...values } : student)),
+    );
+  }
+
+  function viewStudentDetail(student: StudentDirectoryEntry) {
+    setActiveStudentDetail(getStudentDetailFromDirectory(student));
+    setActiveStudentDetailTab("tasks");
+  }
+
+  function openStudentDetail(student: StudentDetailStudent, tab: StudentDetailTab = "tasks") {
+    setActiveStudentDetail(student);
+    setActiveStudentDetailTab(tab);
+  }
 
   return (
     <main className="workspace myclass-workspace">
@@ -2288,10 +3964,26 @@ function ClassView() {
         ))}
       </section>
 
-      {activeSection === "students" && <StudentSection />}
-      {activeSection === "assigned" && <AssignedTaskSection />}
-      {activeSection === "lexile" && <LexileArSection />}
-      {activeSection === "reading" && <ReadingTimeSection />}
+      {activeSection === "students" && (
+        <StudentSection
+          students={students}
+          onUpdateStudent={updateStudentLexileAr}
+          onViewDetail={viewStudentDetail}
+        />
+      )}
+      {activeSection === "assigned" && (
+        <AssignedTaskSection
+          onOpenTaskStudent={openStudentDetail}
+        />
+      )}
+      {activeSection === "lexile" && <LexileArSection onOpenStudent={openStudentDetail} />}
+      {activeStudentDetail && (
+        <StudentDetailDialog
+          student={activeStudentDetail}
+          initialTab={activeStudentDetailTab}
+          onClose={() => setActiveStudentDetail(null)}
+        />
+      )}
     </main>
   );
 }
@@ -2306,6 +3998,43 @@ function getClassStats(classRoom: ClassRoom) {
 
 export function App() {
   const [activeView, setActiveView] = useState<"library" | "myclass">("library");
+  const [teacherMenuOpen, setTeacherMenuOpen] = useState(false);
+  const [topClassName, setTopClassName] = useState(classes[0]?.name ?? "");
+  const [classSwitcherOpen, setClassSwitcherOpen] = useState(false);
+  const classSwitcherRef = useRef<HTMLDivElement | null>(null);
+  const teacherMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!classSwitcherOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!classSwitcherRef.current?.contains(event.target as Node)) {
+        setClassSwitcherOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [classSwitcherOpen]);
+
+  useEffect(() => {
+    if (activeView !== "myclass") {
+      setClassSwitcherOpen(false);
+    }
+  }, [activeView]);
+
+  useEffect(() => {
+    if (!teacherMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!teacherMenuRef.current?.contains(event.target as Node)) {
+        setTeacherMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [teacherMenuOpen]);
 
   return (
     <div className="app-frame">
@@ -2332,6 +4061,74 @@ export function App() {
               <UsersRound size={21} />
               MyClass
             </Button>
+          </div>
+          {activeView === "myclass" && (
+            <div className="top-class-switcher" ref={classSwitcherRef} data-open={classSwitcherOpen}>
+              <button
+                type="button"
+                className="top-class-switcher-icon-button"
+                aria-label="Switch class"
+                aria-expanded={classSwitcherOpen}
+                onClick={() => setClassSwitcherOpen((open) => !open)}
+              >
+                <span className="top-class-switcher-icon" aria-hidden="true">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3.57996 5.15991H17.42C19.08 5.15991 20.42 6.49991 20.42 8.15991V11.4799" stroke="#171717" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M6.73996 2L3.57996 5.15997L6.73996 8.32001" stroke="#171717" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M20.42 18.84H6.57996C4.91996 18.84 3.57996 17.5 3.57996 15.84V12.52" stroke="#171717" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M17.26 21.9999L20.42 18.84L17.26 15.6799" stroke="#171717" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              </button>
+              <span className="top-class-switcher-copy">
+                <span>current class:</span>
+                <strong>{topClassName}</strong>
+              </span>
+              {classSwitcherOpen && (
+                <div className="top-class-switcher-menu" role="listbox" aria-label="Class options">
+                  {classes.map((classRoom) => (
+                    <button
+                      key={classRoom.id}
+                      type="button"
+                      className="top-class-switcher-option"
+                      data-active={classRoom.name === topClassName}
+                      role="option"
+                      aria-selected={classRoom.name === topClassName}
+                      onClick={() => setTopClassName(classRoom.name)}
+                    >
+                      {classRoom.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <div className="teacher-profile-menu" ref={teacherMenuRef}>
+            <div className="teacher-profile-anchor">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="teacher-avatar-button"
+                aria-label="Teacher profile"
+                aria-haspopup="menu"
+                aria-expanded={teacherMenuOpen}
+                onClick={() => setTeacherMenuOpen((isOpen) => !isOpen)}
+              >
+                <img src={studentAvatarImages[9]} alt="Teacher avatar" />
+              </Button>
+              <span>Ms. Charlotte Bennett</span>
+            </div>
+            {teacherMenuOpen && (
+              <Card className="teacher-menu-popover" role="menu">
+                <CardContent>
+                  <Button variant="ghost" role="menuitem" onClick={() => setTeacherMenuOpen(false)}>
+                    <LogOut size={18} />
+                    Log out
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
         {activeView === "library" ? <LibraryView /> : <ClassView />}

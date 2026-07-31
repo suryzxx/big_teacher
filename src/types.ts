@@ -1,4 +1,4 @@
-export type ResourceType = "E-book" | "Audio" | "Video" | "Reading";
+export type ResourceType = "Writing" | "Podcast" | "Video" | "Reading";
 export type ResourceGenre =
   | "Fiction"
   | "Short Story"
@@ -22,12 +22,12 @@ type BaseResource = {
 };
 
 export type TextResource = BaseResource & {
-  type: "E-book" | "Reading";
+  type: "Writing" | "Reading";
   wordCount: number;
 };
 
 export type MediaResource = BaseResource & {
-  type: "Audio" | "Video";
+  type: "Podcast" | "Video";
   duration: string;
 };
 
@@ -49,6 +49,7 @@ export type Student = {
   id: string;
   name: string;
   avatarColor: string;
+  avatarImage?: string;
   readingLevel: number;
   weeklyMinutes: number;
   completionRate: number;
