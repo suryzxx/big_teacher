@@ -7,7 +7,17 @@ export type ResourceGenre =
   | "Opinion"
   | "Science Fiction"
   | "News"
-  | "Fantasy";
+  | "Fantasy"
+  | "Informative"
+  | "Persuasive"
+  | "Descriptive"
+  | "Narrative"
+  | "Report"
+  | "poetry"
+  | "Story"
+  | "Blog Post"
+  | "Email"
+  | "Letter";
 
 type BaseResource = {
   id: string;

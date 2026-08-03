@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type MouseEvent } from "react";
 import {
   AudioLines,
   BookOpen,
@@ -7,6 +7,7 @@ import {
   ChevronRight,
   CircleAlert,
   ClipboardPlus,
+  ChevronDown,
   FileText,
   MoreHorizontal,
   LibraryBig,
@@ -51,6 +52,8 @@ const riskCopy = {
 type ClassMetricKey = "lexile" | "time" | "words";
 type PeriodKey = "week" | "month" | "ytd";
 type MyClassSection = "students" | "assigned" | "lexile";
+type ReportTimeRange = "week" | "month" | "semester";
+type ReportDimension = "academic" | "reading" | "writing";
 
 const classMetricOptions: Array<{ key: ClassMetricKey; label: string }> = [
   { key: "lexile", label: "Lexile Level" },
@@ -62,6 +65,18 @@ const periodOptions: Array<{ key: PeriodKey; label: string }> = [
   { key: "week", label: "By Week" },
   { key: "month", label: "By Month" },
   { key: "ytd", label: "YTD" },
+];
+
+const reportTimeRangeOptions: Array<{ key: ReportTimeRange; label: string; detail: string }> = [
+  { key: "week", label: "Week", detail: "Last 7 days" },
+  { key: "month", label: "Month", detail: "Last 30 days" },
+  { key: "semester", label: "Semester", detail: "Jan-Jun" },
+];
+
+const reportDimensionOptions: Array<{ key: ReportDimension; label: string }> = [
+  { key: "academic", label: "Academic" },
+  { key: "reading", label: "Reading" },
+  { key: "writing", label: "Writing" },
 ];
 
 const genreOptions: Array<ResourceGenre | "All"> = [
@@ -132,6 +147,7 @@ const WORDS_STEP = 100;
 const DURATION_MIN = 5;
 const DURATION_MAX = 15;
 const DURATION_STEP = 1;
+const LIBRARY_PAGE_SIZE = 15;
 
 function RangeSlider({
   min,
@@ -160,9 +176,9 @@ function RangeSlider({
   return (
     <div className="lexile-range-filter">
       <div className="lexile-range-header">
-        <strong>
+        <span>
           {minLabel}～{maxLabel}
-        </strong>
+        </span>
       </div>
       <div
         className="lexile-range-control"
@@ -279,7 +295,7 @@ function TypeFilterIcon({ type }: { type: ResourceType }) {
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path
           d="M16.19 2H7.81C4.17 2 2 4.17 2 7.81V16.18C2 19.83 4.17 22 7.81 22H16.18C19.82 22 21.99 19.83 21.99 16.19V7.81C22 4.17 19.83 2 16.19 2ZM10.95 17.51C10.66 17.8 10.11 18.08 9.71 18.14L7.25 18.49C7.16 18.5 7.07 18.51 6.98 18.51C6.57 18.51 6.19 18.37 5.92 18.1C5.59 17.77 5.45 17.29 5.53 16.76L5.88 14.3C5.94 13.89 6.21 13.35 6.51 13.06L10.97 8.6C11.05 8.81 11.13 9.02 11.24 9.26C11.34 9.47 11.45 9.69 11.57 9.89C11.67 10.06 11.78 10.22 11.87 10.34C11.98 10.51 12.11 10.67 12.19 10.76C12.24 10.83 12.28 10.88 12.3 10.9C12.55 11.2 12.84 11.48 13.09 11.69C13.16 11.76 13.2 11.8 13.22 11.81C13.37 11.93 13.52 12.05 13.65 12.14C13.81 12.26 13.97 12.37 14.14 12.46C14.34 12.58 14.56 12.69 14.78 12.8C15.01 12.9 15.22 12.99 15.43 13.06L10.95 17.51ZM17.37 11.09L16.45 12.02C16.39 12.08 16.31 12.11 16.23 12.11C16.2 12.11 16.16 12.11 16.14 12.1C14.11 11.52 12.49 9.9 11.91 7.87C11.88 7.76 11.91 7.64 11.99 7.57L12.92 6.64C14.44 5.12 15.89 5.15 17.38 6.64C18.14 7.4 18.51 8.13 18.51 8.89C18.5 9.61 18.13 10.33 17.37 11.09Z"
-          fill="#171717"
+          fill="currentColor"
         />
       </svg>
     );
@@ -295,7 +311,23 @@ function TypeFilterIcon({ type }: { type: ResourceType }) {
   );
 }
 
-function ResourceCard({ resource, onAssign }: { resource: Resource; onAssign: (resource: Resource) => void }) {
+function ResourceCoverFallback() {
+  return (
+    <div className="resource-cover-fallback">
+      <TypeFilterIcon type="Writing" />
+    </div>
+  );
+}
+
+function ResourceCard({
+  resource,
+  onAssign,
+  onEdit,
+}: {
+  resource: Resource;
+  onAssign: (resource: Resource) => void;
+  onEdit?: (resource: Resource) => void;
+}) {
   const isTextResource = "wordCount" in resource;
   const detail = isTextResource
     ? `${resource.wordCount.toLocaleString()} words`
@@ -304,32 +336,307 @@ function ResourceCard({ resource, onAssign }: { resource: Resource; onAssign: (r
   return (
     <Card className="resource-card gap-0 overflow-hidden py-0">
       <div className="resource-cover">
-        <img src={resource.coverImage} alt={`${resource.title} cover`} />
+        {resource.coverImage ? <img src={resource.coverImage} alt={`${resource.title} cover`} /> : <ResourceCoverFallback />}
         <Badge variant="secondary" className="resource-genre-badge">
           {resource.genre}
         </Badge>
       </div>
-      <CardHeader className="resource-card-header">
-        <CardTitle className="resource-card-title">{resource.title}</CardTitle>
-      </CardHeader>
-      <CardContent className="resource-card-meta">
-        {[`${resource.lexile}L`, detail, resource.type].map((label) => (
-          <Badge key={label} variant="secondary" className="resource-card-badge">
-            {label}
-          </Badge>
-        ))}
-      </CardContent>
-      <CardFooter className="resource-card-actions">
-        <button type="button" className="resource-action resource-action-preview">
-          <PreviewIcon />
-          <span>Preview</span>
-        </button>
-        <button type="button" className="resource-action resource-action-assign" onClick={() => onAssign(resource)}>
-          <AssignIcon />
-          <span>Assign</span>
-        </button>
-      </CardFooter>
+      <div className="resource-card-body">
+        <CardHeader className="resource-card-header">
+          <CardTitle className="resource-card-title">{resource.title}</CardTitle>
+        </CardHeader>
+        <CardContent className="resource-card-meta">
+          {[`${resource.lexile}L`, detail, resource.type].map((label) => (
+            <Badge key={label} variant="secondary" className="resource-card-badge">
+              {label}
+            </Badge>
+          ))}
+        </CardContent>
+        <CardFooter className="resource-card-actions">
+          <button type="button" className="resource-action resource-action-preview" onClick={onEdit ? () => onEdit(resource) : undefined}>
+            <PreviewIcon />
+            <span>{onEdit ? "Edit" : "Preview"}</span>
+          </button>
+          <button type="button" className="resource-action resource-action-assign" onClick={() => onAssign(resource)}>
+            <AssignIcon />
+            <span>Assign</span>
+          </button>
+        </CardFooter>
+      </div>
     </Card>
+  );
+}
+
+function CreateWritingCard({ onCreate }: { onCreate: () => void }) {
+  return (
+    <button type="button" className="create-writing-card" onClick={onCreate}>
+      <span className="create-writing-icon">+</span>
+      <strong>Create Writing Prompt</strong>
+    </button>
+  );
+}
+
+function PaginationArrow({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      {direction === "left" ? (
+        <path
+          d="M15 19.92L8.48 13.4C7.71 12.63 7.71 11.37 8.48 10.6L15 4.07996"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeMiterlimit="10"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : (
+        <path
+          d="M8.91 19.92L15.43 13.4C16.2 12.63 16.2 11.37 15.43 10.6L8.91 4.07996"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeMiterlimit="10"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
+    </svg>
+  );
+}
+
+function CreateWritingDialog({
+  resource,
+  onClose,
+  onSave,
+}: {
+  resource?: Resource | null;
+  onClose: () => void;
+  onSave: (resource: Resource) => void;
+}) {
+  const gradeOptions = ["1st Grade", "2nd Grade", "3rd Grade", "4th Grade", "5th Grade", "6th Grade"];
+  const genreOptions: ResourceGenre[] = [
+    "Informative",
+    "Persuasive",
+    "Descriptive",
+    "Narrative",
+    "Report",
+    "poetry",
+    "Story",
+    "Blog Post",
+    "Email",
+    "Letter",
+  ];
+  const isEditing = Boolean(resource);
+  const [title, setTitle] = useState(resource?.title ?? "");
+  const [prompt, setPrompt] = useState(resource?.description ?? "");
+  const [grades, setGrades] = useState(resource?.topic ? resource.topic.split(", ").filter(Boolean) : []);
+  const [genre, setGenre] = useState<ResourceGenre | "">(resource?.genre ?? "");
+  const [recommended, setRecommended] = useState(resource?.tags.includes("recommended") ?? false);
+  const [coverImage, setCoverImage] = useState(resource?.coverImage ?? "");
+  const [gradeMenuOpen, setGradeMenuOpen] = useState(false);
+  const [genreMenuOpen, setGenreMenuOpen] = useState(false);
+  const gradeMenuRef = useRef<HTMLDivElement | null>(null);
+  const genreMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!gradeMenuOpen && !genreMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (gradeMenuOpen && !gradeMenuRef.current?.contains(target)) {
+        setGradeMenuOpen(false);
+      }
+      if (genreMenuOpen && !genreMenuRef.current?.contains(target)) {
+        setGenreMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [genreMenuOpen, gradeMenuOpen]);
+
+  function removeGrade(grade: string) {
+    setGrades((current) => current.filter((item) => item !== grade));
+  }
+
+  function toggleGrade(grade: string) {
+    setGrades((current) => {
+      if (current.includes(grade)) {
+        return current.filter((item) => item !== grade);
+      }
+
+      return [...current, grade];
+    });
+  }
+
+  function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setCoverImage(URL.createObjectURL(file));
+  }
+
+  function submitWriting() {
+    const trimmedTitle = title.trim();
+    const trimmedPrompt = prompt.trim();
+    if (!trimmedTitle || !trimmedPrompt || grades.length === 0 || !genre) return;
+
+    onSave({
+      id: resource?.id ?? `wr-${Date.now()}`,
+      title: trimmedTitle,
+      type: "Writing",
+      genre,
+      topic: grades.join(", ") || "Writing",
+      lexile: grades.includes("1st Grade") ? 520 : 640,
+      wordCount: Math.max(1000, trimmedPrompt.split(/\s+/).length * 30),
+      coverImage,
+      description: trimmedPrompt,
+      tags: [recommended ? "recommended" : "draft", "writing prompt", genre.toLowerCase()],
+    });
+  }
+
+  return (
+    <div className="writing-dialog-backdrop" role="dialog" aria-modal="true" aria-label={isEditing ? "Edit Writing Prompt" : "Create Writing Prompt"}>
+      <Card className="writing-create-dialog">
+        <CardHeader>
+          <CardTitle>{isEditing ? "Edit Writing Prompt" : "Create Writing Prompt"}</CardTitle>
+          <CardAction>
+            <Button variant="ghost" size="icon-sm" aria-label="Close writing dialog" onClick={onClose}>
+              <X size={18} />
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="writing-create-form">
+          <div className="writing-create-main">
+            <label className="writing-field writing-field-full">
+              <span><em>*</em> Writing Title</span>
+              <Input value={title} onChange={(event) => setTitle(event.target.value)} />
+            </label>
+
+            <label className="writing-field writing-field-full">
+              <span><em>*</em> Writing Prompt</span>
+              <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} />
+            </label>
+          </div>
+
+          <aside className="writing-create-side">
+            <div className="writing-field writing-picker" data-open={gradeMenuOpen} ref={gradeMenuRef}>
+              <span><em>*</em> Grade</span>
+              <button
+                type="button"
+                className="writing-select-shell"
+                aria-expanded={gradeMenuOpen}
+                onClick={() => {
+                  setGradeMenuOpen((current) => !current);
+                  setGenreMenuOpen(false);
+                }}
+              >
+                <div className="writing-grade-tags">
+                  {grades.length > 0 ? (
+                    grades.map((grade) => (
+                      <Badge key={grade} variant="secondary" className="writing-grade-tag" onClick={(event) => event.stopPropagation()}>
+                        <span>{grade}</span>
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Remove ${grade}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            removeGrade(grade);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              removeGrade(grade);
+                            }
+                          }}
+                        >
+                          <X size={14} />
+                        </span>
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="writing-select-placeholder">Select grades</span>
+                  )}
+                </div>
+                <ChevronDown size={18} />
+              </button>
+              {gradeMenuOpen && (
+                <div className="writing-picker-menu">
+                  {gradeOptions.map((grade) => (
+                    <button key={grade} type="button" data-selected={grades.includes(grade)} onClick={() => toggleGrade(grade)}>
+                      <span>{grade}</span>
+                      {grades.includes(grade) && <CheckCircle2 size={16} />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="writing-field writing-picker" data-open={genreMenuOpen} ref={genreMenuRef}>
+              <span><em>*</em> Category</span>
+              <button
+                type="button"
+                className="writing-select-shell"
+                aria-expanded={genreMenuOpen}
+                onClick={() => {
+                  setGenreMenuOpen((current) => !current);
+                  setGradeMenuOpen(false);
+                }}
+              >
+                {genre ? <strong>{genre}</strong> : <span className="writing-select-placeholder">Select category</span>}
+                <ChevronDown size={18} />
+              </button>
+              {genreMenuOpen && (
+                <div className="writing-picker-menu">
+                  {genreOptions.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      data-selected={genre === item}
+                      onClick={() => {
+                        setGenre(item);
+                        setGenreMenuOpen(false);
+                      }}
+                    >
+                      <span>{item}</span>
+                      {genre === item && <CheckCircle2 size={16} />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="writing-recommend">
+              <span>Recommended</span>
+              <button type="button" className="writing-switch" data-enabled={recommended} aria-pressed={recommended} onClick={() => setRecommended((current) => !current)}>
+                <span />
+              </button>
+            </div>
+
+            <div className="writing-image-section">
+              <span>Related Image</span>
+              <div className="writing-image-list">
+                {coverImage && (
+                  <div className="writing-image-preview">
+                    <img src={coverImage} alt="" />
+                  </div>
+                )}
+                <label className="writing-upload-card">
+                  <input type="file" accept="image/*" onChange={handleImageUpload} />
+                  <span>+</span>
+                  <strong>Upload Image</strong>
+                </label>
+              </div>
+            </div>
+          </aside>
+        </CardContent>
+        <CardFooter className="writing-create-footer">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button disabled={!title.trim() || !prompt.trim() || grades.length === 0 || !genre} onClick={submitWriting}>
+            {isEditing ? "Save" : "Create"}
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }
 
@@ -512,7 +819,10 @@ function AssignResourceDialog({
 function LibraryView() {
   const [query, setQuery] = useState("");
   const [type, setType] = useState<ResourceType | null>(null);
-  const [genre, setGenre] = useState("All");
+  const [selectedGenres, setSelectedGenres] = useState<string[]>(["All"]);
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(["All"]);
+  const [genreOpen, setGenreOpen] = useState(false);
+  const [topicOpen, setTopicOpen] = useState(false);
   const [minLexile, setMinLexile] = useState(LEXILE_MIN);
   const [maxLexile, setMaxLexile] = useState(LEXILE_MAX);
   const [minWords, setMinWords] = useState(WORDS_MIN);
@@ -523,11 +833,21 @@ function LibraryView() {
   const [assignClassId, setAssignClassId] = useState("");
   const [assignStudentIds, setAssignStudentIds] = useState<string[]>([]);
   const [assignSuccessMessage, setAssignSuccessMessage] = useState("");
+  const [createWritingOpen, setCreateWritingOpen] = useState(false);
+  const [editingWritingResource, setEditingWritingResource] = useState<Resource | null>(null);
+  const [createdWritingResources, setCreatedWritingResources] = useState<Resource[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const resourcePool = useMemo(() => [...createdWritingResources, ...resources], [createdWritingResources]);
+  const libraryTopicOptions = useMemo(
+    () => ["All", ...Array.from(new Set(resourcePool.map((resource) => resource.topic))).sort()],
+    [resourcePool],
+  );
 
   const filteredResources = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+    const shouldFilterLexile = type === "Reading" || type === "Podcast" || type === "Video";
 
-    return resources.filter((resource) => {
+    return resourcePool.filter((resource) => {
       const matchesQuery =
         normalizedQuery.length === 0 ||
         [resource.title, resource.topic, resource.genre, resource.type, ...resource.tags]
@@ -535,25 +855,48 @@ function LibraryView() {
           .toLowerCase()
           .includes(normalizedQuery);
       const matchesWords =
-        type !== "Writing" && type !== "Reading" ? true : "wordCount" in resource && resource.wordCount >= minWords && resource.wordCount <= maxWords;
+        type !== "Reading" ? true : "wordCount" in resource && resource.wordCount >= minWords && resource.wordCount <= maxWords;
       const matchesDuration =
         type !== "Podcast" && type !== "Video"
           ? true
           : "duration" in resource &&
             getDurationMinutes(resource.duration) >= minDuration &&
             getDurationMinutes(resource.duration) <= maxDuration;
+      const matchesLexile = shouldFilterLexile ? resource.lexile >= minLexile && resource.lexile <= maxLexile : true;
+      const matchesGenre = selectedGenres.includes("All") || selectedGenres.includes(resource.genre);
+      const matchesTopic = selectedTopics.includes("All") || selectedTopics.includes(resource.topic);
 
       return (
         matchesQuery &&
         (type === null || resource.type === type) &&
-        (genre === "All" || resource.genre === genre) &&
-        resource.lexile >= minLexile &&
-        resource.lexile <= maxLexile &&
+        matchesGenre &&
+        matchesTopic &&
+        matchesLexile &&
         matchesWords &&
         matchesDuration
       );
     });
-  }, [genre, maxDuration, maxLexile, maxWords, minDuration, minLexile, minWords, query, type]);
+  }, [maxDuration, maxLexile, maxWords, minDuration, minLexile, minWords, query, resourcePool, selectedGenres, selectedTopics, type]);
+
+  const showCreateWritingCard = type === "Writing" && currentPage === 1;
+  const totalItemCount = filteredResources.length + (type === "Writing" ? 1 : 0);
+  const totalPages = Math.max(1, Math.ceil(totalItemCount / LIBRARY_PAGE_SIZE));
+  const resourcePageSize = showCreateWritingCard ? LIBRARY_PAGE_SIZE - 1 : LIBRARY_PAGE_SIZE;
+  const resourceStartIndex = type === "Writing"
+    ? currentPage === 1
+      ? 0
+      : (currentPage - 1) * LIBRARY_PAGE_SIZE - 1
+    : (currentPage - 1) * LIBRARY_PAGE_SIZE;
+  const pagedResources = filteredResources.slice(resourceStartIndex, resourceStartIndex + resourcePageSize);
+  const visiblePageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [maxDuration, maxLexile, maxWords, minDuration, minLexile, minWords, query, selectedGenres, selectedTopics, type]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   function openAssignDialog(resource: Resource) {
     setAssignResource(resource);
@@ -594,6 +937,20 @@ function LibraryView() {
     setAssignStudentIds([]);
   }
 
+  function createWritingResource(resource: Resource) {
+    setCreatedWritingResources((current) => [resource, ...current]);
+    setCreateWritingOpen(false);
+    setType("Writing");
+    setAssignSuccessMessage(`Writing created: ${resource.title}.`);
+  }
+
+  function updateWritingResource(resource: Resource) {
+    setCreatedWritingResources((current) => current.map((item) => (item.id === resource.id ? resource : item)));
+    setEditingWritingResource(null);
+    setType("Writing");
+    setAssignSuccessMessage(`Writing updated: ${resource.title}.`);
+  }
+
   return (
     <main className="workspace library-workspace">
       {assignSuccessMessage && (
@@ -617,6 +974,21 @@ function LibraryView() {
           onStudentSelectAll={toggleAssignAllStudents}
           onClose={() => setAssignResource(null)}
           onAssign={confirmAssign}
+        />
+      )}
+
+      {createWritingOpen && (
+        <CreateWritingDialog
+          onClose={() => setCreateWritingOpen(false)}
+          onSave={createWritingResource}
+        />
+      )}
+
+      {editingWritingResource && (
+        <CreateWritingDialog
+          resource={editingWritingResource}
+          onClose={() => setEditingWritingResource(null)}
+          onSave={updateWritingResource}
         />
       )}
 
@@ -649,71 +1021,128 @@ function LibraryView() {
             ))}
           </div>
 
-          <Card>
-            <CardContent className="range-filter-stack pt-4">
-              <RangeSlider
-                min={LEXILE_MIN}
-                max={LEXILE_MAX}
-                step={LEXILE_STEP}
-                minValue={minLexile}
-                maxValue={maxLexile}
-                minLabel={`Lexile: ${minLexile}`}
-                maxLabel={`${maxLexile}L`}
-                onMinChange={setMinLexile}
-                onMaxChange={setMaxLexile}
-              />
-              {(type === "Writing" || type === "Reading") && (
+          {(type === "Reading" || type === "Podcast" || type === "Video") && (
+            <Card>
+              <CardContent className="range-filter-stack pt-4">
                 <RangeSlider
-                  min={WORDS_MIN}
-                  max={WORDS_MAX}
-                  step={WORDS_STEP}
-                  minValue={minWords}
-                  maxValue={maxWords}
-                  minLabel={`Words: ${formatWords(minWords)}`}
-                  maxLabel={`${formatWords(maxWords)} words`}
-                  onMinChange={setMinWords}
-                  onMaxChange={setMaxWords}
+                  min={LEXILE_MIN}
+                  max={LEXILE_MAX}
+                  step={LEXILE_STEP}
+                  minValue={minLexile}
+                  maxValue={maxLexile}
+                  minLabel={`Lexile: ${minLexile}`}
+                  maxLabel={`${maxLexile}L`}
+                  onMinChange={setMinLexile}
+                  onMaxChange={setMaxLexile}
                 />
-              )}
-              {(type === "Podcast" || type === "Video") && (
-                <RangeSlider
-                  min={DURATION_MIN}
-                  max={DURATION_MAX}
-                  step={DURATION_STEP}
-                  minValue={minDuration}
-                  maxValue={maxDuration}
-                  minLabel={`Duration: ${minDuration}`}
-                  maxLabel={formatDuration(maxDuration)}
-                  onMinChange={setMinDuration}
-                  onMaxChange={setMaxDuration}
-                />
-              )}
-            </CardContent>
-          </Card>
+                {type === "Reading" && (
+                  <RangeSlider
+                    min={WORDS_MIN}
+                    max={WORDS_MAX}
+                    step={WORDS_STEP}
+                    minValue={minWords}
+                    maxValue={maxWords}
+                    minLabel={`Words: ${formatWords(minWords)}`}
+                    maxLabel={`${formatWords(maxWords)} words`}
+                    onMinChange={setMinWords}
+                    onMaxChange={setMaxWords}
+                  />
+                )}
+                {(type === "Podcast" || type === "Video") && (
+                  <RangeSlider
+                    min={DURATION_MIN}
+                    max={DURATION_MAX}
+                    step={DURATION_STEP}
+                    minValue={minDuration}
+                    maxValue={maxDuration}
+                    minLabel={`Duration: ${minDuration}`}
+                    maxLabel={formatDuration(maxDuration)}
+                    onMinChange={setMinDuration}
+                    onMaxChange={setMaxDuration}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-          <Card>
-            <CardContent className="genre-list">
-              {genreOptions.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  className="genre-filter-item"
-                  data-active={genre === item}
-                  onClick={() => setGenre(item)}
-                >
-                  {item}
-                </button>
-              ))}
+          <Card className="library-filter-select-card">
+            <CardContent className="library-filter-select-stack">
+              <AssignMultiSelect
+                label="Genre"
+                options={genreOptions}
+                values={selectedGenres}
+                open={genreOpen}
+                required={false}
+                onOpenChange={(nextOpen) => {
+                  setGenreOpen(nextOpen);
+                  if (nextOpen) setTopicOpen(false);
+                }}
+                onChange={setSelectedGenres}
+              />
+              <AssignMultiSelect
+                label="Topic"
+                options={libraryTopicOptions}
+                values={selectedTopics}
+                open={topicOpen}
+                required={false}
+                onOpenChange={(nextOpen) => {
+                  setTopicOpen(nextOpen);
+                  if (nextOpen) setGenreOpen(false);
+                }}
+                onChange={setSelectedTopics}
+              />
             </CardContent>
           </Card>
         </aside>
 
         <div className="library-main">
           <section className="resource-grid">
-            {filteredResources.map((resource) => (
-              <ResourceCard key={resource.id} resource={resource} onAssign={openAssignDialog} />
+            {showCreateWritingCard && <CreateWritingCard onCreate={() => setCreateWritingOpen(true)} />}
+            {pagedResources.map((resource) => (
+              <ResourceCard
+                key={resource.id}
+                resource={resource}
+                onAssign={openAssignDialog}
+                onEdit={createdWritingResources.some((item) => item.id === resource.id) ? setEditingWritingResource : undefined}
+              />
             ))}
           </section>
+          {totalPages > 1 && (
+            <nav className="library-pagination" aria-label="Library pagination">
+              <span>Total {totalItemCount} items</span>
+              <div className="library-page-controls">
+                <button
+                  type="button"
+                  className="library-page-arrow"
+                  disabled={currentPage === 1}
+                  aria-label="Previous page"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                >
+                  <PaginationArrow direction="left" />
+                </button>
+                {visiblePageNumbers.map((pageNumber) => (
+                  <button
+                    key={pageNumber}
+                    type="button"
+                    className="library-page-number"
+                    aria-current={currentPage === pageNumber ? "page" : undefined}
+                    onClick={() => setCurrentPage(pageNumber)}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className="library-page-arrow"
+                  disabled={currentPage === totalPages}
+                  aria-label="Next page"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                >
+                  <PaginationArrow direction="right" />
+                </button>
+              </div>
+            </nav>
+          )}
         </div>
       </section>
     </main>
@@ -1333,7 +1762,6 @@ const typeDistribution = [
   { label: "Reading", value: 48 },
   { label: "Video", value: 24 },
   { label: "Podcast", value: 18 },
-  { label: "Writing prompt", value: 12 },
 ];
 
 const genreDistribution = [
@@ -1344,11 +1772,23 @@ const genreDistribution = [
   { label: "Informational", value: 18 },
 ];
 
-const assignedTaskRowsByWeek = {
+type AssignedTaskStatus = "Completed" | "In Progress" | "Not Started";
+type AssignedTaskRow = {
+  id: number;
+  taskName: string;
+  recipient: string;
+  taskType: string;
+  sentAt: string;
+  submittedAt: string;
+  status: AssignedTaskStatus;
+  completedAt: string;
+};
+
+const assignedTaskRowsByWeek: Record<string, AssignedTaskRow[]> = {
   "this-week": [
     {
       id: 1,
-      taskName: "Garden Path Reading",
+      taskName: "Garden Path Reading Comprehension and Evidence Review",
       recipient: "Aaliyah Johnson",
       taskType: "Reading",
       sentAt: "May 11, 09:20",
@@ -1358,7 +1798,7 @@ const assignedTaskRowsByWeek = {
     },
     {
       id: 2,
-      taskName: "Ocean Animals Video",
+      taskName: "Ocean Animals Video Notes and Main Idea Check",
       recipient: "Ethan Kim",
       taskType: "Video",
       sentAt: "May 11, 10:15",
@@ -1368,7 +1808,7 @@ const assignedTaskRowsByWeek = {
     },
     {
       id: 3,
-      taskName: "Biography Podcast",
+      taskName: "Biography Podcast Listening Response Journal",
       recipient: "Mia Rodriguez",
       taskType: "Podcast",
       sentAt: "May 12, 08:45",
@@ -1378,9 +1818,9 @@ const assignedTaskRowsByWeek = {
     },
     {
       id: 4,
-      taskName: "Fiction Response",
+      taskName: "Character Motivation Podcast Check and Evidence Notes",
       recipient: "Liam Chen",
-      taskType: "Writing prompt",
+      taskType: "Podcast",
       sentAt: "May 13, 13:10",
       submittedAt: "-",
       status: "Not Started",
@@ -1388,7 +1828,7 @@ const assignedTaskRowsByWeek = {
     },
     {
       id: 5,
-      taskName: "Lexile Practice Set",
+      taskName: "Lexile Practice Set for Informational Reading Growth",
       recipient: "Sophia Patel",
       taskType: "Reading",
       sentAt: "May 14, 09:00",
@@ -1400,7 +1840,7 @@ const assignedTaskRowsByWeek = {
   "last-week": [
     {
       id: 1,
-      taskName: "Main Idea Reading",
+      taskName: "Main Idea Reading Passage and Detail Sort",
       recipient: "Noah Thompson",
       taskType: "Reading",
       sentAt: "May 04, 09:10",
@@ -1410,7 +1850,7 @@ const assignedTaskRowsByWeek = {
     },
     {
       id: 2,
-      taskName: "Science Video Notes",
+      taskName: "Science Video Notes for Cause and Effect",
       recipient: "Isabella Garcia",
       taskType: "Video",
       sentAt: "May 05, 11:30",
@@ -1420,7 +1860,7 @@ const assignedTaskRowsByWeek = {
     },
     {
       id: 3,
-      taskName: "Podcast Reflection",
+      taskName: "Podcast Reflection on Speaker Purpose and Tone",
       recipient: "James Wilson",
       taskType: "Podcast",
       sentAt: "May 06, 08:40",
@@ -1430,7 +1870,7 @@ const assignedTaskRowsByWeek = {
     },
     {
       id: 4,
-      taskName: "Short Story Quiz",
+      taskName: "Short Story Quiz with Vocabulary Review",
       recipient: "Olivia Martinez",
       taskType: "Reading",
       sentAt: "May 07, 14:00",
@@ -1440,9 +1880,9 @@ const assignedTaskRowsByWeek = {
     },
     {
       id: 5,
-      taskName: "Vocabulary Practice",
+      taskName: "Vocabulary Practice Video Using Context Clues",
       recipient: "Benjamin Moore",
-      taskType: "Writing prompt",
+      taskType: "Video",
       sentAt: "May 08, 10:20",
       submittedAt: "-",
       status: "Not Started",
@@ -1452,6 +1892,253 @@ const assignedTaskRowsByWeek = {
 };
 
 type AssignedTaskWeek = keyof typeof assignedTaskRowsByWeek;
+type AssignedCompletionDetail =
+  | { kind: "Reading"; label: string; totalQuestions: number; correctAnswers: number }
+  | { kind: "Writing"; label: string; score: number; wordCount: number; versions: number };
+type AssignStatsPeriod = "week" | "month" | "year";
+
+function makeAssignedTaskRow(
+  seed: AssignedTaskRow,
+  recipient: string,
+  index: number,
+  status: AssignedTaskRow["status"],
+): AssignedTaskRow {
+  return {
+    ...seed,
+    id: seed.id * 100 + index,
+    recipient,
+    submittedAt: status === "Completed" ? seed.submittedAt : "-",
+    completedAt: status === "Completed" ? seed.completedAt : "-",
+    status,
+  };
+}
+
+const task011Seeds: AssignedTaskRow[] = [
+  {
+    id: 11,
+    taskName: "Reading Evidence Sprint on Animal Adaptations and Habitat Details",
+    recipient: "Aaliyah Johnson",
+    taskType: "Reading",
+    sentAt: "May 15, 09:30",
+    submittedAt: "May 15, 14:18",
+    status: "Completed",
+    completedAt: "May 15, 14:40",
+  },
+  {
+    id: 12,
+    taskName: "Podcast Notes on Weather Patterns and Speaker Purpose",
+    recipient: "Ethan Kim",
+    taskType: "Podcast",
+    sentAt: "May 15, 09:30",
+    submittedAt: "May 15, 15:02",
+    status: "Completed",
+    completedAt: "May 15, 15:25",
+  },
+  {
+    id: 13,
+    taskName: "Video Analysis for Ecosystem Cause and Effect Relationships",
+    recipient: "Mia Rodriguez",
+    taskType: "Video",
+    sentAt: "May 15, 09:30",
+    submittedAt: "-",
+    status: "In Progress",
+    completedAt: "-",
+  },
+];
+
+const task012Seed: AssignedTaskRow = {
+  id: 14,
+  taskName: "Personal Narrative Writing Prompt with Clear Sequence and Reflection",
+  recipient: "G4-Rainbow Class",
+  taskType: "Writing prompt",
+  sentAt: "May 16, 10:00",
+  submittedAt: "May 16, 15:10",
+  status: "Completed",
+  completedAt: "May 16, 15:30",
+};
+
+function getAssignedTaskBatches() {
+  const monthIndex: Record<string, number> = {
+    Jan: 1,
+    Feb: 2,
+    Mar: 3,
+    Apr: 4,
+    May: 5,
+    Jun: 6,
+    Jul: 7,
+    Aug: 8,
+    Sep: 9,
+    Oct: 10,
+    Nov: 11,
+    Dec: 12,
+  };
+  function getSentAtSortValue(sentAt: string) {
+    const match = sentAt.match(/^([A-Za-z]+)\s+(\d+),\s+(\d+):(\d+)$/);
+    if (!match) return 0;
+    const [, month, day, hour, minute] = match;
+    return (((monthIndex[month] ?? 0) * 31 + Number(day)) * 24 + Number(hour)) * 60 + Number(minute);
+  }
+
+  const latestSeed = assignedTaskRowsByWeek["this-week"][4];
+  const classStatuses: AssignedTaskRow["status"][] = [
+    "In Progress",
+    "Completed",
+    "In Progress",
+    "Not Started",
+    "Completed",
+    "In Progress",
+    "Not Started",
+    "Completed",
+  ];
+  const task011Statuses: AssignedTaskRow["status"][] = [
+    "Completed",
+    "In Progress",
+    "Not Started",
+    "Completed",
+    "In Progress",
+    "Completed",
+    "Not Started",
+    "In Progress",
+    "Completed",
+  ];
+  const task012Statuses: AssignedTaskRow["status"][] = studentDirectory.map((_, index) =>
+    index % 9 === 0 ? "Not Started" : index % 4 === 0 ? "In Progress" : "Completed",
+  );
+  const task011StudentsByType = [
+    studentDirectory.slice(0, 3),
+    studentDirectory.slice(3, 6),
+    studentDirectory.slice(6, 9),
+  ];
+  const task011Rows = task011Seeds.flatMap((seed, seedIndex) =>
+    task011StudentsByType[seedIndex].map((student, studentIndex) => {
+      const statusIndex = seedIndex * 3 + studentIndex;
+      return makeAssignedTaskRow(seed, student.name, statusIndex, task011Statuses[statusIndex]);
+    }),
+  );
+  const task012Rows = studentDirectory.map((student, index) => makeAssignedTaskRow(task012Seed, student.name, index, task012Statuses[index]));
+  const sourceBatches = [
+    {
+      sentAt: task012Seed.sentAt,
+      rows: task012Rows,
+    },
+    {
+      sentAt: task011Seeds[0].sentAt,
+      rows: task011Rows,
+    },
+    {
+      sentAt: latestSeed.sentAt,
+      rows: studentDirectory.slice(0, 8).map((student, index) => makeAssignedTaskRow(latestSeed, student.name, index, classStatuses[index])),
+    },
+    ...Object.values(assignedTaskRowsByWeek)
+      .flat()
+      .filter((row) => row !== latestSeed)
+      .map((row) => ({ sentAt: row.sentAt, rows: [row] })),
+  ];
+
+  return sourceBatches
+    .sort((left, right) => getSentAtSortValue(right.sentAt) - getSentAtSortValue(left.sentAt))
+    .map((batch, index) => ({
+      key: `task-${String(sourceBatches.length - index).padStart(3, "0")}`,
+      title: `task${String(sourceBatches.length - index).padStart(3, "0")}`,
+      ...batch,
+    }));
+}
+
+const assignedTaskBatches = getAssignedTaskBatches();
+
+const assignStatsPeriodOptions: Array<{ key: AssignStatsPeriod; label: string }> = [
+  { key: "week", label: "Week" },
+  { key: "month", label: "Month" },
+  { key: "year", label: "YTD" },
+];
+
+function getAssignStatsRows(period: AssignStatsPeriod) {
+  const thisWeekRows = assignedTaskRowsByWeek["this-week"];
+  const allRows = Object.values(assignedTaskRowsByWeek).flat();
+
+  if (period === "week") return thisWeekRows;
+  if (period === "month") return [...allRows, ...thisWeekRows, ...assignedTaskRowsByWeek["last-week"]];
+  return [...allRows, ...allRows, ...thisWeekRows, ...assignedTaskRowsByWeek["last-week"]];
+}
+
+function getAssignStatusSummary(period: AssignStatsPeriod) {
+  const rows = getAssignStatsRows(period);
+  const total = rows.length;
+  const completed = rows.filter((row) => row.status === "Completed").length;
+  const inProgress = rows.filter((row) => row.status === "In Progress").length;
+  const notStarted = rows.filter((row) => row.status === "Not Started").length;
+  const completedPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const inProgressPercent = total > 0 ? Math.round((inProgress / total) * 100) : 0;
+  const notStartedPercent = Math.max(0, 100 - completedPercent - inProgressPercent);
+
+  return {
+    total,
+    completed,
+    inProgress,
+    notStarted,
+    completedPercent,
+    inProgressPercent,
+    notStartedPercent,
+  };
+}
+
+function AssignStatsBarChart({
+  period,
+  onPeriodChange,
+}: {
+  period: AssignStatsPeriod;
+  onPeriodChange: (period: AssignStatsPeriod) => void;
+}) {
+  const [tooltip, setTooltip] = useState<{ x: number; y: number } | null>(null);
+  const summary = getAssignStatusSummary(period);
+  const stats = [
+    { key: "completed", label: "Completed", value: summary.completed, percent: summary.completedPercent },
+    { key: "in-progress", label: "In Progress", value: summary.inProgress, percent: summary.inProgressPercent },
+    { key: "not-started", label: "Not Started", value: summary.notStarted, percent: summary.notStartedPercent },
+  ];
+
+  return (
+    <div className="assign-stats-bars" aria-label={`${summary.total} total tasks`}>
+      <div className="assign-stats-period-tabs" role="tablist" aria-label="Task status range">
+        {assignStatsPeriodOptions.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            role="tab"
+            aria-selected={period === item.key}
+            onClick={(event) => {
+              event.stopPropagation();
+              onPeriodChange(item.key);
+            }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div
+        className="assign-stats-stacked-bar"
+        onMouseEnter={(event) => setTooltip({ x: event.clientX, y: event.clientY })}
+        onMouseMove={(event) => setTooltip({ x: event.clientX, y: event.clientY })}
+        onMouseLeave={() => setTooltip(null)}
+      >
+          {stats.map((item) => (
+            <span key={item.key} data-status={item.key} style={{ width: `${item.percent}%` }} />
+          ))}
+      </div>
+      {tooltip && (
+        <div className="assign-stats-tooltip" style={{ left: tooltip.x + 14, top: tooltip.y + 14 }} aria-hidden="true">
+          <strong>Total: {summary.total}</strong>
+          {stats.map((item) => (
+            <span data-status={item.key} key={item.key}>
+              <i />
+              {item.label}: {item.value}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 type AssignedBentoId =
   | "completion"
@@ -1495,9 +2182,9 @@ const myClassSections: Array<{
 }> = [
   {
     key: "students",
-    title: "Total Students",
+    title: "Roster",
     primary: "25 students",
-    secondary: "1 class",
+    secondary: "",
     detail: "",
     icon: UsersRound,
     iconImage: `${import.meta.env.BASE_URL}myclass-icons/students.png`,
@@ -1505,7 +2192,7 @@ const myClassSections: Array<{
   },
   {
     key: "assigned",
-    title: "Assigned Tasks",
+    title: "Tasks",
     primary: "27 active",
     secondary: "64 total this month",
     detail: "",
@@ -1563,13 +2250,16 @@ const lexileLeaderboard = [
 });
 
 function getReportStudentFromDirectory(student: StudentDirectoryEntry): (typeof lexileLeaderboard)[number] {
-  const matchedStudent = lexileLeaderboard.find((item) => item.name === student.name) ?? lexileLeaderboard[0];
+  const matchedStudent = lexileLeaderboard.find((item) => item.name === student.name);
+  const fallbackRank = studentDirectory.findIndex((entry) => entry.id === student.id) + 1;
 
   return {
-    ...matchedStudent,
+    rank: matchedStudent?.rank ?? fallbackRank,
     name: student.name,
     lexile: student.lexile,
     ar: student.ar,
+    trend: matchedStudent?.trend ?? Math.max(52, Math.round((student.lexile - 560) * 0.2)),
+    accuracy: matchedStudent?.accuracy ?? Math.min(96, Math.max(72, Math.round(student.ar * 13 + 24))),
     avatar: getInitials(student.name),
     avatarImage: student.avatarImage,
     color: student.avatarColor,
@@ -1717,6 +2407,60 @@ function AssignedStatusRadialChart() {
   );
 }
 
+function AssignCollapsedPreview() {
+  const [period, setPeriod] = useState<AssignStatsPeriod>("week");
+
+  return (
+    <div className="assign-collapsed-preview">
+      <section className="assign-collapsed-stats" aria-label="Task status summary">
+        <AssignStatsBarChart period={period} onPeriodChange={setPeriod} />
+      </section>
+    </div>
+  );
+}
+
+function AssignedTaskSummaryCard() {
+  const [period, setPeriod] = useState<AssignStatsPeriod>("week");
+
+  return (
+    <Card className="assigned-task-summary-card">
+      <CardContent>
+        <section className="assign-collapsed-stats" aria-label="Task status summary">
+          <AssignStatsBarChart period={period} onPeriodChange={setPeriod} />
+        </section>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AssignTaskLaunchCard({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button type="button" className="assign-task-launch-card" onClick={onOpen}>
+      <span>Assign</span>
+    </button>
+  );
+}
+
+function AssignTaskDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="assign-task-dialog-backdrop" role="dialog" aria-modal="true" aria-label="Assign task">
+      <Card className="assign-task-dialog">
+        <CardHeader>
+          <CardTitle>Assign Task</CardTitle>
+          <CardAction>
+            <Button variant="ghost" size="icon-sm" aria-label="Close assign task" onClick={onClose}>
+              <X size={18} />
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <AssignWorkflowPanel onCancel={onClose} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function LeaderboardArrowIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1842,23 +2586,17 @@ function LeaderboardCard({
 }: {
   onOpenStudent: (student: StudentDetailStudent, tab?: StudentDetailTab) => void;
 }) {
+  const completionRows = [...leaderboard].sort((left, right) => left.rate - right.rate || left.name.localeCompare(right.name));
 
   return (
     <Card className="leaderboard-card">
-      <CardHeader>
-        <CardTitle>
-          <Trophy size={24} />
-          Student Completion Leaderboard
-        </CardTitle>
-      </CardHeader>
       <CardContent>
         <div className="leaderboard-head">
-          <span>#</span>
-          <span>Student</span>
+          <span>Students</span>
           <span>Task Status</span>
         </div>
         <div className="leaderboard-list">
-          {leaderboard.map((student) => (
+          {completionRows.map((student) => (
             <div
               className="leaderboard-row"
               key={student.name}
@@ -1872,9 +2610,6 @@ function LeaderboardCard({
                 }
               }}
             >
-              <Badge variant="secondary" className="rank-badge" data-rank={student.rank}>
-                {student.rank}
-              </Badge>
               <div className="leaderboard-student">
                 <span className="leaderboard-avatar" style={student.avatarImage ? undefined : { backgroundColor: student.color }}>
                   {student.avatarImage ? <img src={student.avatarImage} alt="" /> : student.avatar}
@@ -2292,10 +3027,12 @@ function MyClassSummaryCard({
       <span className="myclass-summary-copy">
         <span>{section.title}</span>
         <strong>{section.primary}</strong>
-        <small>
-          {section.secondary}
-          {section.detail && <em>{section.detail}</em>}
-        </small>
+        {(section.secondary || section.detail) && (
+          <small>
+            {section.secondary}
+            {section.detail && <em>{section.detail}</em>}
+          </small>
+        )}
       </span>
     </Button>
   );
@@ -2344,7 +3081,7 @@ function AssignedMiniBarChart({
     tone === "green"
       ? "Lexile Distribution：750～900"
       : tone === "blue"
-        ? "Type Distribution：Reading、Video、Podcast、Writing"
+        ? "Type Distribution：Reading、Video、Podcast"
         : "Genre Distribution：Fiction、Nonfiction、Biography";
 
   return (
@@ -2395,171 +3132,286 @@ function AssignedTaskWeekSummary({ title }: { title: string }) {
   );
 }
 
-function AssignedTaskListCard({ isSelected, onSelect }: { isSelected: boolean; onSelect: () => void }) {
-  const [expandedWeek, setExpandedWeek] = useState<AssignedTaskWeek | null>(null);
-  const [expandedStudentByWeek, setExpandedStudentByWeek] = useState<Record<AssignedTaskWeek, string | null>>({
-    "this-week": null,
-    "last-week": null,
-  });
-  const weekItems: Array<{ key: AssignedTaskWeek; title: string }> = [
-    { key: "this-week", title: "This Week" },
-    { key: "last-week", title: "Last Week" },
-  ];
-
-  function getTaskStudent(name: string) {
-    return studentDirectory.find((student) => student.name === name);
-  }
-
-  function getStudentTaskGroups(rows: (typeof assignedTaskRowsByWeek)[AssignedTaskWeek]) {
-    return rows.reduce<Array<{ recipient: string; rows: typeof rows }>>((groups, row) => {
-      const group = groups.find((item) => item.recipient === row.recipient);
-      if (group) {
-        group.rows.push(row);
-      } else {
-        groups.push({ recipient: row.recipient, rows: [row] });
-      }
-      return groups;
-    }, []);
-  }
+function AssignedTaskListCard() {
+  const [expandedBatchKey, setExpandedBatchKey] = useState<string | null>(assignedTaskBatches[0]?.key ?? null);
+  const [completionTooltip, setCompletionTooltip] = useState<{ detail: AssignedCompletionDetail; x: number; y: number } | null>(null);
 
   function getAssignedTaskResourceType(taskType: string): ResourceType {
     return taskType === "Writing prompt" ? "Writing" : (taskType as ResourceType);
   }
 
-  function getWeekTaskSummary(rows: (typeof assignedTaskRowsByWeek)[AssignedTaskWeek]) {
+  function getAssignedTaskResource(row: AssignedTaskRow) {
+    const resourceType = getAssignedTaskResourceType(row.taskType);
+    return (
+      resources.find((resource) => resource.type === resourceType && row.taskName.toLowerCase().includes(resource.title.split(" ")[0].toLowerCase())) ??
+      resources.find((resource) => resource.type === resourceType) ??
+      resources[0]
+    );
+  }
+
+  function getAssignedTaskLength(row: AssignedTaskRow) {
+    const resource = getAssignedTaskResource(row);
+    if ("wordCount" in resource) return `${resource.wordCount.toLocaleString()} words`;
+    return resource.duration;
+  }
+
+  function getAssignedTaskMeta(row: AssignedTaskRow) {
+    const resource = getAssignedTaskResource(row);
+    const resourceType = getAssignedTaskResourceType(row.taskType);
+    if (resourceType === "Writing") {
+      return `${resource.topic} · ${resource.genre}`;
+    }
+    return `${resource.lexile}L · ${getAssignedTaskLength(row)}`;
+  }
+
+  function getAssignedTaskCompletionDetail(row: AssignedTaskRow): AssignedCompletionDetail | null {
+    if (row.status !== "Completed") return null;
+    const resourceType = getAssignedTaskResourceType(row.taskType);
+    if (resourceType !== "Reading" && resourceType !== "Writing") return null;
+
+    const seed = row.recipient.length + row.taskName.length + row.sentAt.length;
+    if (resourceType === "Reading") {
+      const totalQuestions = 8 + (seed % 5);
+      const correctAnswers = Math.max(1, totalQuestions - (seed % 3));
+      return {
+        kind: "Reading",
+        label: `${Math.round((correctAnswers / totalQuestions) * 100)}%`,
+        totalQuestions,
+        correctAnswers,
+      };
+    }
+
+    const writingResult = getAssignedWritingResult(row);
+    return {
+      kind: "Writing",
+      label: `${writingResult.score}`,
+      score: writingResult.score,
+      wordCount: writingResult.wordCount,
+      versions: writingResult.versions,
+    };
+  }
+
+  function getAssignedWritingResult(row: AssignedTaskRow) {
+    const seed = row.recipient.length + row.taskName.length + row.sentAt.length;
+    const score = 78 + (seed % 18);
+    const wordCount = 260 + (seed % 9) * 48;
+    const versions = 1 + (seed % 4);
+    return { score, wordCount, versions };
+  }
+
+  function showCompletionTooltip(event: MouseEvent<HTMLElement>, detail: AssignedCompletionDetail) {
+    setCompletionTooltip({ detail, x: event.clientX, y: event.clientY });
+  }
+
+  function getAssignedTaskOperation(row: AssignedTaskRow) {
+    const resourceType = getAssignedTaskResourceType(row.taskType);
+    if (resourceType === "Writing") return "Discussion";
+    if (row.status !== "Completed") return "";
+    if (resourceType === "Reading") return "Feedback";
+    return "";
+  }
+
+  function renderTaskBatchSummary(rows: AssignedTaskRow[]) {
     const completed = rows.filter((row) => row.status === "Completed").length;
     const inProgress = rows.filter((row) => row.status === "In Progress").length;
     const notStarted = rows.filter((row) => row.status === "Not Started").length;
-    return `${completed} completed | ${inProgress} in progress | ${notStarted} not started`;
+    return (
+      <em className="assigned-week-status-summary">
+        <span data-status="completed">{completed} completed</span>
+        <span aria-hidden="true">|</span>
+        <span data-status="in-progress">{inProgress} in progress</span>
+        <span aria-hidden="true">|</span>
+        <span data-status="not-started">{notStarted} not started</span>
+      </em>
+    );
   }
 
-  function getWeekDateRange(rows: (typeof assignedTaskRowsByWeek)[AssignedTaskWeek]) {
-    const days = rows.map((row) => row.sentAt.split(",")[0]);
-    return `${days[0]} - ${days[days.length - 1]}`;
+  function renderTaskTypeSummary(rows: AssignedTaskRow[]) {
+    const typeOrder: ResourceType[] = ["Reading", "Video", "Podcast", "Writing"];
+    const counts = rows.reduce<Record<ResourceType, number>>(
+      (summary, row) => {
+        const resourceType = getAssignedTaskResourceType(row.taskType);
+        summary[resourceType] += 1;
+        return summary;
+      },
+      { Reading: 0, Video: 0, Podcast: 0, Writing: 0 },
+    );
+    const activeTypes = typeOrder.filter((resourceType) => counts[resourceType] > 0);
+
+    return (
+      <span className="assigned-week-type-summary" aria-label={activeTypes.map((resourceType) => `${counts[resourceType]} ${resourceType}`).join(", ")}>
+        {activeTypes.map((resourceType) => (
+          <span key={resourceType} data-type={resourceType}>
+            <strong>{counts[resourceType]}</strong>
+            <TypeFilterIcon type={resourceType} />
+          </span>
+        ))}
+      </span>
+    );
   }
 
-  function renderTaskTable(rows: (typeof assignedTaskRowsByWeek)[AssignedTaskWeek]) {
+  function renderTaskTable(rows: AssignedTaskRow[]) {
+    const isWritingBatch = rows.length > 0 && rows.every((row) => getAssignedTaskResourceType(row.taskType) === "Writing");
+    if (isWritingBatch) {
+      const taskRow = rows[0];
+      return (
+        <div className="assigned-writing-task-panel">
+          <div className="assigned-writing-task-info" data-type="Writing">
+            <TypeFilterIcon type="Writing" />
+            <div>
+              <strong>{taskRow.taskName}</strong>
+              <span>{getAssignedTaskMeta(taskRow)}</span>
+            </div>
+            <em>{rows.length} students</em>
+          </div>
+          <div className="assigned-task-table assigned-writing-task-table" role="table" aria-label="Assigned writing task list">
+            <div className="assigned-task-table-head" role="row">
+              <span role="columnheader">Student</span>
+              <span role="columnheader">Completion</span>
+              <span role="columnheader">Writing Words</span>
+              <span role="columnheader">Writing Score</span>
+              <span role="columnheader">Versions</span>
+              <span role="columnheader">Operation</span>
+            </div>
+            {rows.map((row) => {
+              const writingResult = getAssignedWritingResult(row);
+              const hasWritingData = row.status !== "Not Started";
+
+              return (
+                <div className="assigned-task-table-row" role="row" key={`${row.sentAt}-${row.recipient}-${row.taskName}`}>
+                  <span className="assigned-task-student-name" role="cell">{row.recipient}</span>
+                  <span className="assigned-task-completion-cell" role="cell">
+                    <Badge variant="secondary" className="assigned-task-status" data-status={row.status}>
+                      {row.status}
+                    </Badge>
+                  </span>
+                  <span role="cell">{hasWritingData ? writingResult.wordCount.toLocaleString() : "-"}</span>
+                  <span role="cell">{row.status === "Completed" ? writingResult.score : "-"}</span>
+                  <span role="cell">{hasWritingData ? writingResult.versions : "-"}</span>
+                  <span className="assigned-task-operation-cell" role="cell">
+                    <Button type="button" variant="outline" size="sm" className="assigned-task-operation-button">
+                      Discussion
+                    </Button>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="assigned-task-table" role="table" aria-label="Assigned task list">
         <div className="assigned-task-table-head" role="row">
-          <span role="columnheader">Task</span>
-          <span role="columnheader">Submitted</span>
-          <span role="columnheader">Status</span>
-          <span role="columnheader">Action</span>
+          <span role="columnheader">Task Info</span>
+          <span role="columnheader">Student</span>
+          <span role="columnheader">Completion</span>
+          <span role="columnheader">Operation</span>
         </div>
-        {rows.map((row) => (
-          <div className="assigned-task-table-row" role="row" key={row.id}>
-            <strong className="assigned-task-name" role="cell">
-              <TypeFilterIcon type={getAssignedTaskResourceType(row.taskType)} />
-              <span>{row.taskName}</span>
-            </strong>
-            <span role="cell">{row.submittedAt}</span>
-            <span role="cell">
-              <Badge variant="secondary" className="assigned-task-status" data-status={row.status}>
-                {row.status}
-              </Badge>
-            </span>
-            <Button type="button" variant="outline" size="sm" className="assigned-task-feedback-button">
-              Feedback
-            </Button>
-          </div>
-        ))}
+        {rows.map((row) => {
+          const completionDetail = getAssignedTaskCompletionDetail(row);
+          const operation = getAssignedTaskOperation(row);
+
+          return (
+            <div className="assigned-task-table-row" role="row" key={`${row.sentAt}-${row.recipient}-${row.taskName}`}>
+              <div className="assigned-task-info-cell" role="cell" data-type={getAssignedTaskResourceType(row.taskType)}>
+                <strong className="assigned-task-name">
+                  <span>{row.taskName}</span>
+                </strong>
+                <span className="assigned-task-meta">
+                  <TypeFilterIcon type={getAssignedTaskResourceType(row.taskType)} />
+                  {getAssignedTaskMeta(row)}
+                </span>
+              </div>
+              <span className="assigned-task-student-name" role="cell">{row.recipient}</span>
+              <span className="assigned-task-completion-cell" role="cell">
+                <Badge variant="secondary" className="assigned-task-status" data-status={row.status}>
+                  {row.status}
+                </Badge>
+                {completionDetail ? (
+                  <strong
+                    className="assigned-task-score"
+                    onMouseEnter={(event) => showCompletionTooltip(event, completionDetail)}
+                    onMouseMove={(event) => showCompletionTooltip(event, completionDetail)}
+                    onMouseLeave={() => setCompletionTooltip(null)}
+                  >
+                    {completionDetail.label}
+                  </strong>
+                ) : (
+                  <span className="assigned-task-no-score">-</span>
+                )}
+              </span>
+              <span className="assigned-task-operation-cell" role="cell">
+                {operation ? (
+                  <Button type="button" variant="outline" size="sm" className="assigned-task-operation-button">
+                    {operation}
+                  </Button>
+                ) : (
+                  <span className="assigned-task-no-score">-</span>
+                )}
+              </span>
+            </div>
+          );
+        })}
       </div>
     );
   }
 
   return (
-    <Card
-      className="assigned-task-list-card"
-      data-selected={isSelected}
-      role="button"
-      tabIndex={0}
-      onClick={onSelect}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onSelect();
-        }
-      }}
-    >
+    <Card className="assigned-task-list-card">
       <CardContent>
-        {isSelected ? (
-          <>
-            <CardTitle>Task List</CardTitle>
-            <div className="assigned-task-week-list">
-              {weekItems.map((week) => {
-                const rows = assignedTaskRowsByWeek[week.key];
-                const isExpanded = expandedWeek === week.key;
-                const studentGroups = getStudentTaskGroups(rows);
+        <div className="assigned-task-week-list">
+          {assignedTaskBatches.map((taskBatch) => {
+            const isExpanded = expandedBatchKey === taskBatch.key;
+            const completed = taskBatch.rows.filter((row) => row.status === "Completed").length;
+            const inProgress = taskBatch.rows.filter((row) => row.status === "In Progress").length;
+            const notStarted = taskBatch.rows.filter((row) => row.status === "Not Started").length;
+            const completionState = completed === 0 ? "empty" : inProgress === 0 && notStarted === 0 ? "complete" : "partial";
 
-                return (
-                  <section className="assigned-task-week-card" data-expanded={isExpanded} key={week.key}>
-                    <button
-                      type="button"
-                      className="assigned-task-week-toggle"
-                      aria-expanded={isExpanded}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setExpandedWeek((current) => (current === week.key ? null : week.key));
-                      }}
-                    >
-                      <span>
-                        <strong>{week.title}</strong>
-                        <em>{getWeekTaskSummary(rows)}</em>
-                      </span>
-                      <time>{getWeekDateRange(rows)}</time>
-                      <ChevronRight size={18} />
-                    </button>
-                    {isExpanded && (
-                      <div className="assigned-task-student-list">
-                        {studentGroups.map((studentGroup) => {
-                          const student = getTaskStudent(studentGroup.recipient);
-                          const completedCount = studentGroup.rows.filter((row) => row.status === "Completed").length;
-                          const isStudentExpanded = expandedStudentByWeek[week.key] === studentGroup.recipient;
-
-                          return (
-                            <section className="assigned-task-student-card" data-expanded={isStudentExpanded} key={studentGroup.recipient}>
-                              <button
-                                type="button"
-                                className="assigned-task-student-toggle"
-                                aria-expanded={isStudentExpanded}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setExpandedStudentByWeek((current) => ({
-                                    ...current,
-                                    [week.key]: current[week.key] === studentGroup.recipient ? null : studentGroup.recipient,
-                                  }));
-                                }}
-                              >
-                                <span className="assigned-task-student-avatar">
-                                  {student?.avatarImage ? <img src={student.avatarImage} alt="" /> : getInitials(studentGroup.recipient)}
-                                </span>
-                                <span className="assigned-task-student-copy">
-                                  <strong>{studentGroup.recipient}</strong>
-                                  <em>
-                                    {completedCount}/{studentGroup.rows.length} completed
-                                  </em>
-                                </span>
-                                <ChevronRight size={16} />
-                              </button>
-                              {isStudentExpanded && renderTaskTable(studentGroup.rows)}
-                            </section>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </section>
-                );
-              })}
-            </div>
-          </>
-        ) : (
-          <div className="assigned-task-preview">
-            <img src={`${import.meta.env.BASE_URL}myclass-icons/tasklist.png`} alt="" />
-            <div className="assigned-task-summary-row">
-              <AssignedTaskWeekSummary title="This Week" />
-              <AssignedTaskWeekSummary title="Last Week" />
-            </div>
+            return (
+              <section className="assigned-task-week-card" data-expanded={isExpanded} data-completion-state={completionState} key={taskBatch.key}>
+                <button
+                  type="button"
+                  className="assigned-task-week-toggle"
+                  aria-expanded={isExpanded}
+                  onClick={() => {
+                    setExpandedBatchKey((current) => (current === taskBatch.key ? null : taskBatch.key));
+                  }}
+                >
+                  <span>
+                    <strong>{taskBatch.title}</strong>
+                    {renderTaskBatchSummary(taskBatch.rows)}
+                  </span>
+                  {renderTaskTypeSummary(taskBatch.rows)}
+                  <time>{taskBatch.sentAt}</time>
+                  <ChevronRight size={18} />
+                </button>
+                {isExpanded && renderTaskTable(taskBatch.rows)}
+              </section>
+            );
+          })}
+        </div>
+        {completionTooltip && (
+          <div
+            className="assigned-task-score-tooltip"
+            style={{ left: completionTooltip.x + 14, top: completionTooltip.y + 14 }}
+            aria-hidden="true"
+          >
+            {completionTooltip.detail.kind === "Reading" ? (
+              <>
+                <strong>Quiz result</strong>
+                <span>Total questions: {completionTooltip.detail.totalQuestions}</span>
+                <span>Correct answers: {completionTooltip.detail.correctAnswers}</span>
+              </>
+            ) : (
+              <>
+                <strong>Writing result</strong>
+                <span>Writing score: {completionTooltip.detail.score}</span>
+                <span>Word count: {completionTooltip.detail.wordCount}</span>
+                <span>Draft versions: {completionTooltip.detail.versions}</span>
+              </>
+            )}
           </div>
         )}
       </CardContent>
@@ -2568,14 +3420,13 @@ function AssignedTaskListCard({ isSelected, onSelect }: { isSelected: boolean; o
 }
 
 type AssignWorkflowStep = 1 | 2 | 3;
-type AssignContentType = "Reading" | "Video" | "Podcast" | "Writing prompt";
+type AssignContentType = "Reading" | "Video" | "Podcast";
 type AssignMultiSelectOption = "All" | string;
 
 const assignContentOptions: Array<{ type: AssignContentType; label: string }> = [
   { type: "Reading", label: "Reading" },
   { type: "Video", label: "Video" },
   { type: "Podcast", label: "Podcast" },
-  { type: "Writing prompt", label: "Writing prompt" },
 ];
 
 const assignGenreOptions = [
@@ -2600,6 +3451,7 @@ function AssignMultiSelect({
   onOpenChange,
   onChange,
   helper,
+  required = true,
 }: {
   label: string;
   options: string[];
@@ -2608,6 +3460,7 @@ function AssignMultiSelect({
   onOpenChange: (open: boolean) => void;
   onChange: (values: string[]) => void;
   helper?: string;
+  required?: boolean;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -2652,7 +3505,7 @@ function AssignMultiSelect({
           onOpenChange(!open);
         }}
       >
-        <span className="assign-required">*</span>
+        {required && <span className="assign-required">*</span>}
         <strong>{label}</strong>
         {helper && <em>{helper}</em>}
       </button>
@@ -2722,13 +3575,12 @@ function AssignMultiSelect({
   );
 }
 
-function AssignWorkflowPanel() {
+function AssignWorkflowPanel({ onCancel }: { onCancel: () => void }) {
   const [step, setStep] = useState<AssignWorkflowStep>(1);
   const [taskCounts, setTaskCounts] = useState<Record<AssignContentType, number>>({
     Reading: 0,
     Video: 0,
     Podcast: 0,
-    "Writing prompt": 0,
   });
   const [selectedStudentIds, setSelectedStudentIds] = useState(() => studentDirectory.slice(0, 8).map((student) => student.id));
   const [keyword, setKeyword] = useState("");
@@ -2745,7 +3597,7 @@ function AssignWorkflowPanel() {
   const canGoNext = step === 1 ? hasSelectedTaskType : step === 2 ? hasSelectedStudents : true;
   const matchTaskTypes = selectedTaskTypes.length > 0 ? selectedTaskTypes : assignContentOptions.map((item) => item.type);
   function getAssignResourceType(taskType: AssignContentType): ResourceType {
-    return taskType === "Writing prompt" ? "Writing" : taskType;
+    return taskType;
   }
 
   const matchedRows = selectedStudents.map((student, index) => {
@@ -2768,7 +3620,7 @@ function AssignWorkflowPanel() {
   }
 
   function getAssignMatchTypeLabel(taskType: AssignContentType) {
-    return taskType === "Writing prompt" ? "Writing" : taskType;
+    return taskType;
   }
 
   function toggleStudent(studentId: string) {
@@ -3005,15 +3857,26 @@ function AssignWorkflowPanel() {
 
       <div className="assign-workflow-footer">
         {validationMessage && <span className="assign-validation-message">{validationMessage}</span>}
-        <Button type="button" variant="outline" disabled={step === 1} onClick={() => setStep((current) => (current - 1) as AssignWorkflowStep)}>
-          Back
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            if (step === 1) {
+              onCancel();
+              return;
+            }
+
+            setStep((current) => (current - 1) as AssignWorkflowStep);
+          }}
+        >
+          {step === 1 ? "Cancel" : "Back"}
         </Button>
         {step < 3 ? (
           <Button type="button" aria-disabled={!canGoNext} data-disabled={!canGoNext} onClick={goNext}>
             Next
           </Button>
         ) : (
-          <Button type="button">Assign</Button>
+          <Button type="button" onClick={onCancel}>Assign</Button>
         )}
       </div>
     </div>
@@ -3289,45 +4152,25 @@ function AssignedTaskSection({
 }: {
   onOpenTaskStudent: (student: StudentDetailStudent, tab?: StudentDetailTab) => void;
 }) {
-  const [selectedAssignedPanel, setSelectedAssignedPanel] = useState<"assign" | "tasks">("assign");
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
 
   return (
     <section className="assigned-dashboard">
+      {assignDialogOpen && <AssignTaskDialog onClose={() => setAssignDialogOpen(false)} />}
       <div className="assigned-overview-grid" aria-label="Assigned task overview">
-        <div className="assigned-work-area" data-selected={selectedAssignedPanel}>
-          <Card
-            className="assign-hero-card assigned-overview-card task-mode-card"
-            data-selected={selectedAssignedPanel === "assign"}
-            role="button"
-            tabIndex={0}
-            onClick={() => setSelectedAssignedPanel("assign")}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                setSelectedAssignedPanel("assign");
-              }
-            }}
-          >
-            <CardContent>
-              {selectedAssignedPanel === "assign" ? (
-                <AssignWorkflowPanel />
-              ) : (
-                <span className="task-mode-preview">
-                  <img src={`${import.meta.env.BASE_URL}myclass-icons/assign.png`} alt="" />
-                  <span data-tone="assign">ASSIGN<br />TASK</span>
-                </span>
-              )}
-            </CardContent>
-          </Card>
-
+        <div className="assigned-work-area">
           <div className="assigned-task-list-area">
-            <AssignedTaskListCard isSelected={selectedAssignedPanel === "tasks"} onSelect={() => setSelectedAssignedPanel("tasks")} />
+            <AssignedTaskListCard />
           </div>
         </div>
 
-        <div className="leaderboard-area">
+        <aside className="assigned-side-area">
+          <div className="assigned-task-action-row">
+            <AssignedTaskSummaryCard />
+            <AssignTaskLaunchCard onOpen={() => setAssignDialogOpen(true)} />
+          </div>
           <LeaderboardCard onOpenStudent={onOpenTaskStudent} />
-        </div>
+        </aside>
       </div>
     </section>
   );
@@ -3549,6 +4392,216 @@ function StudentReportLineChart({
   );
 }
 
+type ReportTrendPoint = { label: string; value: number };
+type StudentReadingReportData = {
+  lexile: ReportTrendPoint[];
+  readingTime: ReportTrendPoint[];
+  readingWords: ReportTrendPoint[];
+  writingTime: ReportTrendPoint[];
+  writingWords: ReportTrendPoint[];
+};
+
+function getStudentReportData(student: StudentDetailStudent, timeRange: ReportTimeRange): StudentReadingReportData {
+  const monthLexileData = lexileTrend.map((item, index) => ({
+    label: item.label,
+    value: index === lexileTrend.length - 1 ? student.lexile : Math.round(item.lexile + (student.lexile - 1000) * 0.18),
+  }));
+  const weekLexileData = [
+    { label: "Mon", value: Math.max(400, student.lexile - 42) },
+    { label: "Tue", value: Math.max(400, student.lexile - 36) },
+    { label: "Wed", value: Math.max(400, student.lexile - 22) },
+    { label: "Thu", value: Math.max(400, student.lexile - 18) },
+    { label: "Fri", value: Math.max(400, student.lexile - 8) },
+    { label: "Sun", value: student.lexile },
+  ];
+  const semesterLexileData = [
+    { label: "Jan", value: Math.max(400, student.lexile - student.trend) },
+    { label: "Feb", value: Math.max(400, student.lexile - Math.round(student.trend * 0.78)) },
+    { label: "Mar", value: Math.max(400, student.lexile - Math.round(student.trend * 0.58)) },
+    { label: "Apr", value: Math.max(400, student.lexile - Math.round(student.trend * 0.36)) },
+    { label: "May", value: Math.max(400, student.lexile - Math.round(student.trend * 0.18)) },
+    { label: "Jun", value: student.lexile },
+  ];
+
+  const studentFactor = Math.max(0.76, Math.min(1.34, student.lexile / 940));
+  const scaleSeries = (series: ReportTrendPoint[], multiplier = 1) =>
+    series.map((item) => ({ ...item, value: Math.round(item.value * studentFactor * multiplier) }));
+
+  const reportData: Record<ReportTimeRange, StudentReadingReportData> = {
+    week: {
+      lexile: weekLexileData,
+      readingTime: scaleSeries([
+        { label: "Mon", value: 18 },
+        { label: "Tue", value: 22 },
+        { label: "Wed", value: 20 },
+        { label: "Thu", value: 26 },
+        { label: "Fri", value: 24 },
+        { label: "Sun", value: 32 },
+      ]),
+      readingWords: scaleSeries([
+        { label: "Mon", value: 1380 },
+        { label: "Tue", value: 1640 },
+        { label: "Wed", value: 1510 },
+        { label: "Thu", value: 1880 },
+        { label: "Fri", value: 1760 },
+        { label: "Sun", value: 2140 },
+      ]),
+      writingWords: scaleSeries([
+        { label: "Mon", value: 180 },
+        { label: "Tue", value: 220 },
+        { label: "Wed", value: 205 },
+        { label: "Thu", value: 260 },
+        { label: "Fri", value: 240 },
+        { label: "Sun", value: 300 },
+      ]),
+      writingTime: scaleSeries([
+        { label: "Mon", value: 9 },
+        { label: "Tue", value: 12 },
+        { label: "Wed", value: 10 },
+        { label: "Thu", value: 15 },
+        { label: "Fri", value: 14 },
+        { label: "Sun", value: 17 },
+      ]),
+    },
+    month: {
+      lexile: monthLexileData,
+      readingTime: scaleSeries([
+        { label: "W1", value: 82 },
+        { label: "W2", value: 96 },
+        { label: "W3", value: 104 },
+        { label: "W4", value: 118 },
+      ]),
+      readingWords: scaleSeries([
+        { label: "W1", value: 8200 },
+        { label: "W2", value: 9600 },
+        { label: "W3", value: 10800 },
+        { label: "W4", value: 12300 },
+      ]),
+      writingWords: scaleSeries([
+        { label: "W1", value: 960 },
+        { label: "W2", value: 1180 },
+        { label: "W3", value: 1340 },
+        { label: "W4", value: 1510 },
+      ]),
+      writingTime: scaleSeries([
+        { label: "W1", value: 42 },
+        { label: "W2", value: 48 },
+        { label: "W3", value: 54 },
+        { label: "W4", value: 61 },
+      ]),
+    },
+    semester: {
+      lexile: semesterLexileData,
+      readingTime: scaleSeries([
+        { label: "Jan", value: 82 },
+        { label: "Feb", value: 96 },
+        { label: "Mar", value: 104 },
+        { label: "Apr", value: 118 },
+        { label: "May", value: 126 },
+        { label: "Jun", value: 142 },
+      ]),
+      readingWords: scaleSeries([
+        { label: "Jan", value: 8200 },
+        { label: "Feb", value: 9600 },
+        { label: "Mar", value: 10800 },
+        { label: "Apr", value: 12300 },
+        { label: "May", value: 13700 },
+        { label: "Jun", value: 15100 },
+      ]),
+      writingWords: scaleSeries([
+        { label: "Jan", value: 960 },
+        { label: "Feb", value: 1180 },
+        { label: "Mar", value: 1340 },
+        { label: "Apr", value: 1510 },
+        { label: "May", value: 1680 },
+        { label: "Jun", value: 1890 },
+      ]),
+      writingTime: scaleSeries([
+        { label: "Jan", value: 42 },
+        { label: "Feb", value: 48 },
+        { label: "Mar", value: 54 },
+        { label: "Apr", value: 61 },
+        { label: "May", value: 68 },
+        { label: "Jun", value: 74 },
+      ]),
+    },
+  };
+
+  return reportData[timeRange];
+}
+
+function summarizeTrend(data: ReportTrendPoint[]) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  const first = data[0]?.value ?? 0;
+  const last = data[data.length - 1]?.value ?? 0;
+  const delta = last - first;
+  const percent = first === 0 ? 0 : Math.round((delta / first) * 100);
+
+  return { total, first, last, delta, percent };
+}
+
+function getChangeCopy(delta: number, unit: string, percent: number) {
+  const absDelta = Math.abs(delta).toLocaleString();
+  if (delta > 0) return `+${absDelta}${unit} (${percent > 0 ? "+" : ""}${percent}%)`;
+  if (delta < 0) return `-${absDelta}${unit} (${percent}%)`;
+  return `No change`;
+}
+
+function ReadingReportSummaryCard({ timeRange }: { timeRange: ReportTimeRange }) {
+  const classSeries = lexileLeaderboard.map((student) => getStudentReportData(getStudentDetailFromReportStudent(student), timeRange));
+  const sumSeries = (metric: keyof Pick<StudentReadingReportData, "readingTime" | "readingWords">) =>
+    classSeries[0][metric].map((point, index) => ({
+      label: point.label,
+      value: classSeries.reduce((sum, series) => sum + series[metric][index].value, 0),
+    }));
+  const readingTime = summarizeTrend(sumSeries("readingTime"));
+  const readingWords = summarizeTrend(sumSeries("readingWords"));
+  const rangeLabel = reportTimeRangeOptions.find((option) => option.key === timeRange)?.detail ?? "";
+  const stats = [
+    {
+      label: "Reading Time",
+      value: `${readingTime.total.toLocaleString()} min`,
+      detail: getChangeCopy(readingTime.delta, " min", readingTime.percent),
+      trend: readingTime.delta,
+      icon: CalendarDays,
+    },
+    {
+      label: "Reading Words",
+      value: readingWords.total.toLocaleString(),
+      detail: getChangeCopy(readingWords.delta, " words", readingWords.percent),
+      trend: readingWords.delta,
+      icon: BookOpen,
+    },
+  ];
+
+  return (
+    <Card className="reading-report-summary-card">
+      <CardHeader>
+        <CardTitle>
+          <BookOpen size={22} />
+          Reading Statistics
+        </CardTitle>
+        <CardDescription>{rangeLabel}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {stats.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div key={stat.label} data-trend={stat.trend < 0 ? "down" : stat.trend > 0 ? "up" : "flat"}>
+              <span>
+                <Icon size={24} />
+              </span>
+              <p>{stat.label}</p>
+              <strong>{stat.value}</strong>
+              <small>{stat.detail}</small>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
 function LexileStatStrip() {
   const stats = [
     { label: "Class Avg. Lexile", value: "820L", detail: "+65L this term", icon: ListChecks, tone: "green" },
@@ -3693,71 +4746,111 @@ function ClassDistributionTabs() {
 
 function LexileLeaderboardCard({
   onOpenStudent,
+  timeRange,
 }: {
   onOpenStudent: (student: StudentDetailStudent, tab?: StudentDetailTab) => void;
+  timeRange: ReportTimeRange;
 }) {
-  const [activeMetric, setActiveMetric] = useState<"lexile" | "ar">("lexile");
+  const [activeDimension, setActiveDimension] = useState<ReportDimension>("academic");
+  type ReportLeaderboardRow = {
+    rank: number;
+    student: StudentDetailStudent;
+    readingTime: number;
+    readingWords: number;
+    writingTime: number;
+    writingWords: number;
+  };
+  const rows: ReportLeaderboardRow[] = studentDirectory
+    .map((directoryStudent) => {
+      const student = getStudentDetailFromDirectory(directoryStudent);
+      const reportData = getStudentReportData(student, timeRange);
+
+      return {
+        rank: 0,
+        student,
+        readingTime: summarizeTrend(reportData.readingTime).total,
+        readingWords: summarizeTrend(reportData.readingWords).total,
+        writingTime: summarizeTrend(reportData.writingTime).total,
+        writingWords: summarizeTrend(reportData.writingWords).total,
+      };
+    })
+    .sort((a, b) => b.readingWords - a.readingWords || b.student.lexile - a.student.lexile)
+    .map((row, index) => ({ ...row, rank: index + 1 }));
 
   return (
-    <Card className="lexile-leaderboard-card">
+    <Card className="lexile-leaderboard-card report-leaderboard-card">
       <CardHeader>
         <CardTitle>
           <Trophy size={22} />
           Report Leaderboard
         </CardTitle>
         <CardAction>
-          <div className="lexile-tab-control" role="tablist" aria-label="Leaderboard metric">
-            <button type="button" role="tab" aria-selected={activeMetric === "lexile"} onClick={() => setActiveMetric("lexile")}>
-              Lexile
-            </button>
-            <button type="button" role="tab" aria-selected={activeMetric === "ar"} onClick={() => setActiveMetric("ar")}>
-              AR
-            </button>
+          <div className="report-dimension-tabs" role="tablist" aria-label="Report dimension">
+            {reportDimensionOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                role="tab"
+                aria-selected={activeDimension === option.key}
+                onClick={() => setActiveDimension(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
         </CardAction>
+        <CardDescription>{rows.length} students ranked by reading words in the selected range.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="lexile-leaderboard-head">
           <span>#</span>
           <span>Student</span>
-          <span>{activeMetric === "lexile" ? "Lexile (L)" : "AR Level"}</span>
-          <span>{activeMetric === "lexile" ? "Growth" : "AR Growth"}</span>
+          <span data-dimension="academic" data-active={activeDimension === "academic"}>Lexile</span>
+          <span data-dimension="academic" data-active={activeDimension === "academic"}>AR</span>
+          <span data-dimension="reading" data-active={activeDimension === "reading"}>Reading Time</span>
+          <span data-dimension="reading" data-active={activeDimension === "reading"}>Reading Words</span>
+          <span data-dimension="writing" data-active={activeDimension === "writing"}>Writing Time</span>
+          <span data-dimension="writing" data-active={activeDimension === "writing"}>Writing Words</span>
           <span />
         </div>
-        {lexileLeaderboard.map((student) => (
+        {rows.map((row) => (
           <div
             className="lexile-leaderboard-row"
-            key={student.name}
+            key={row.student.id}
             role="button"
             tabIndex={0}
-            onClick={() => onOpenStudent(getStudentDetailFromReportStudent(student), "report")}
+            onClick={() => onOpenStudent(row.student, "report")}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                onOpenStudent(getStudentDetailFromReportStudent(student), "report");
+                onOpenStudent(row.student, "report");
               }
             }}
           >
-            <Badge variant="secondary" className="rank-badge" data-rank={student.rank}>
-              {student.rank}
+            <Badge variant="secondary" className="rank-badge" data-rank={row.rank}>
+              {row.rank}
             </Badge>
             <div className="leaderboard-student">
-              <span className="leaderboard-avatar" style={student.avatarImage ? undefined : { backgroundColor: student.color }}>
-                {student.avatarImage ? <img src={student.avatarImage} alt="" /> : student.avatar}
+              <span className="leaderboard-avatar" style={row.student.avatarImage ? undefined : { backgroundColor: row.student.color }}>
+                {row.student.avatarImage ? <img src={row.student.avatarImage} alt="" /> : row.student.avatar}
               </span>
-              <strong>{student.name}</strong>
+              <strong>{row.student.name}</strong>
             </div>
-            <span>{activeMetric === "lexile" ? `${student.lexile}L` : student.ar}</span>
-            <em>{activeMetric === "lexile" ? `+${student.trend}L` : "+0.6"}</em>
+            <span data-dimension="academic" data-active={activeDimension === "academic"}>{row.student.lexile}L</span>
+            <span data-dimension="academic" data-active={activeDimension === "academic"}>{row.student.ar}</span>
+            <span data-dimension="reading" data-active={activeDimension === "reading"}>{row.readingTime.toLocaleString()} min</span>
+            <span data-dimension="reading" data-active={activeDimension === "reading"}>{row.readingWords.toLocaleString()}</span>
+            <span data-dimension="writing" data-active={activeDimension === "writing"}>{row.writingTime.toLocaleString()} min</span>
+            <span data-dimension="writing" data-active={activeDimension === "writing"}>{row.writingWords.toLocaleString()}</span>
             <Button
               type="button"
               variant="ghost"
               size="icon-sm"
               className="leaderboard-detail-button"
-              aria-label={`View ${student.name} report details`}
+              aria-label={`View ${row.student.name} report details`}
               onClick={(event) => {
                 event.stopPropagation();
-                onOpenStudent(getStudentDetailFromReportStudent(student), "report");
+                onOpenStudent(row.student, "report");
               }}
             >
               <LeaderboardArrowIcon />
@@ -3769,87 +4862,26 @@ function LexileLeaderboardCard({
   );
 }
 
-function StudentReportPanel({ student }: { student: StudentDetailStudent }) {
-  const [timeRange, setTimeRange] = useState<"week" | "month">("month");
-  const monthLexileData = lexileTrend.map((item, index) => ({
-    label: item.label,
-    value: index === lexileTrend.length - 1 ? student.lexile : item.lexile,
-  }));
-  const weekLexileData = [
-    { label: "Mon", value: Math.max(400, student.lexile - 42) },
-    { label: "Tue", value: Math.max(400, student.lexile - 36) },
-    { label: "Wed", value: Math.max(400, student.lexile - 22) },
-    { label: "Thu", value: Math.max(400, student.lexile - 18) },
-    { label: "Fri", value: Math.max(400, student.lexile - 8) },
-    { label: "Sun", value: student.lexile },
-  ];
-  const reportData = {
-    month: {
-      lexile: monthLexileData,
-      readingTime: [
-        { label: "Jan", value: 82 },
-        { label: "Feb", value: 96 },
-        { label: "Mar", value: 104 },
-        { label: "Apr", value: 118 },
-        { label: "May", value: 126 },
-        { label: "Jun", value: 142 },
-      ],
-      readingWords: [
-        { label: "Jan", value: 8200 },
-        { label: "Feb", value: 9600 },
-        { label: "Mar", value: 10800 },
-        { label: "Apr", value: 12300 },
-        { label: "May", value: 13700 },
-        { label: "Jun", value: 15100 },
-      ],
-      writingWords: [
-        { label: "Jan", value: 960 },
-        { label: "Feb", value: 1180 },
-        { label: "Mar", value: 1340 },
-        { label: "Apr", value: 1510 },
-        { label: "May", value: 1680 },
-        { label: "Jun", value: 1890 },
-      ],
-    },
-    week: {
-      lexile: weekLexileData,
-      readingTime: [
-        { label: "Mon", value: 18 },
-        { label: "Tue", value: 22 },
-        { label: "Wed", value: 20 },
-        { label: "Thu", value: 26 },
-        { label: "Fri", value: 24 },
-        { label: "Sun", value: 32 },
-      ],
-      readingWords: [
-        { label: "Mon", value: 1380 },
-        { label: "Tue", value: 1640 },
-        { label: "Wed", value: 1510 },
-        { label: "Thu", value: 1880 },
-        { label: "Fri", value: 1760 },
-        { label: "Sun", value: 2140 },
-      ],
-      writingWords: [
-        { label: "Mon", value: 180 },
-        { label: "Tue", value: 220 },
-        { label: "Wed", value: 205 },
-        { label: "Thu", value: 260 },
-        { label: "Fri", value: 240 },
-        { label: "Sun", value: 300 },
-      ],
-    },
-  };
-  const activeData = reportData[timeRange];
+function StudentReportPanel({ student, timeRange }: { student: StudentDetailStudent; timeRange: ReportTimeRange }) {
+  const activeData = getStudentReportData(student, timeRange);
+  const readingTime = summarizeTrend(activeData.readingTime);
+  const readingWords = summarizeTrend(activeData.readingWords);
+  const rangeLabel = reportTimeRangeOptions.find((option) => option.key === timeRange)?.detail ?? "";
 
   return (
     <div className="student-report-panel">
-      <div className="student-report-range" role="tablist" aria-label="Report time range">
-        <button type="button" role="tab" aria-selected={timeRange === "week"} onClick={() => setTimeRange("week")}>
-          Week
-        </button>
-        <button type="button" role="tab" aria-selected={timeRange === "month"} onClick={() => setTimeRange("month")}>
-          Month
-        </button>
+      <div className="student-report-summary" aria-label={`${student.name} reading summary`}>
+        <div>
+          <span>Reading Time</span>
+          <strong>{readingTime.total.toLocaleString()} min</strong>
+          <small>{getChangeCopy(readingTime.delta, " min", readingTime.percent)}</small>
+        </div>
+        <div>
+          <span>Reading Words</span>
+          <strong>{readingWords.total.toLocaleString()}</strong>
+          <small>{getChangeCopy(readingWords.delta, " words", readingWords.percent)}</small>
+        </div>
+        <em>{rangeLabel}</em>
       </div>
       <StudentReportLineChart label="Lexile" unit="L" data={activeData.lexile} tone="green" />
       <StudentReportLineChart label="Reading Time" unit="min" data={activeData.readingTime} tone="amber" />
@@ -3862,10 +4894,12 @@ function StudentReportPanel({ student }: { student: StudentDetailStudent }) {
 function StudentDetailDialog({
   student,
   initialTab,
+  reportTimeRange,
   onClose,
 }: {
   student: StudentDetailStudent;
   initialTab: StudentDetailTab;
+  reportTimeRange: ReportTimeRange;
   onClose: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<StudentDetailTab>(initialTab);
@@ -3904,7 +4938,7 @@ function StudentDetailDialog({
           </CardAction>
         </CardHeader>
         <CardContent className="student-detail-dialog-content">
-          {activeTab === "tasks" ? <StudentTasksPanel student={student} /> : <StudentReportPanel student={student} />}
+          {activeTab === "tasks" ? <StudentTasksPanel student={student} /> : <StudentReportPanel student={student} timeRange={reportTimeRange} />}
         </CardContent>
       </Card>
     </div>
@@ -3913,18 +4947,37 @@ function StudentDetailDialog({
 
 function LexileArSection({
   onOpenStudent,
+  timeRange,
+  onTimeRangeChange,
 }: {
   onOpenStudent: (student: StudentDetailStudent, tab?: StudentDetailTab) => void;
+  timeRange: ReportTimeRange;
+  onTimeRangeChange: (timeRange: ReportTimeRange) => void;
 }) {
   return (
     <section className="lexile-dashboard">
+      <div className="report-toolbar">
+        <div>
+          <h2>Report</h2>
+          <p>Class reading data and student progress for the selected range.</p>
+        </div>
+        <div className="student-report-range" role="tablist" aria-label="Report time range">
+          {reportTimeRangeOptions.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              role="tab"
+              aria-selected={timeRange === option.key}
+              onClick={() => onTimeRangeChange(option.key)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="lexile-leaderboard-area">
-        <LexileLeaderboardCard onOpenStudent={onOpenStudent} />
+        <LexileLeaderboardCard onOpenStudent={onOpenStudent} timeRange={timeRange} />
       </div>
-      <div className="lexile-distribution-area">
-        <ClassDistributionTabs />
-      </div>
-      <div className="lexile-empty-area" aria-hidden="true" />
     </section>
   );
 }
@@ -3934,6 +4987,7 @@ function ClassView() {
   const [students, setStudents] = useState<StudentDirectoryEntry[]>(studentDirectory);
   const [activeStudentDetail, setActiveStudentDetail] = useState<StudentDetailStudent | null>(null);
   const [activeStudentDetailTab, setActiveStudentDetailTab] = useState<StudentDetailTab>("tasks");
+  const [reportTimeRange, setReportTimeRange] = useState<ReportTimeRange>("month");
 
   function updateStudentLexileAr(studentId: string, values: Pick<StudentDirectoryEntry, "lexile" | "ar">) {
     setStudents((currentStudents) =>
@@ -3976,11 +5030,18 @@ function ClassView() {
           onOpenTaskStudent={openStudentDetail}
         />
       )}
-      {activeSection === "lexile" && <LexileArSection onOpenStudent={openStudentDetail} />}
+      {activeSection === "lexile" && (
+        <LexileArSection
+          onOpenStudent={openStudentDetail}
+          timeRange={reportTimeRange}
+          onTimeRangeChange={setReportTimeRange}
+        />
+      )}
       {activeStudentDetail && (
         <StudentDetailDialog
           student={activeStudentDetail}
           initialTab={activeStudentDetailTab}
+          reportTimeRange={reportTimeRange}
           onClose={() => setActiveStudentDetail(null)}
         />
       )}
@@ -3998,11 +5059,9 @@ function getClassStats(classRoom: ClassRoom) {
 
 export function App() {
   const [activeView, setActiveView] = useState<"library" | "myclass">("library");
-  const [teacherMenuOpen, setTeacherMenuOpen] = useState(false);
   const [topClassName, setTopClassName] = useState(classes[0]?.name ?? "");
   const [classSwitcherOpen, setClassSwitcherOpen] = useState(false);
   const classSwitcherRef = useRef<HTMLDivElement | null>(null);
-  const teacherMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!classSwitcherOpen) return;
@@ -4016,25 +5075,6 @@ export function App() {
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [classSwitcherOpen]);
-
-  useEffect(() => {
-    if (activeView !== "myclass") {
-      setClassSwitcherOpen(false);
-    }
-  }, [activeView]);
-
-  useEffect(() => {
-    if (!teacherMenuOpen) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      if (!teacherMenuRef.current?.contains(event.target as Node)) {
-        setTeacherMenuOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [teacherMenuOpen]);
 
   return (
     <div className="app-frame">
@@ -4062,72 +5102,55 @@ export function App() {
               MyClass
             </Button>
           </div>
-          {activeView === "myclass" && (
-            <div className="top-class-switcher" ref={classSwitcherRef} data-open={classSwitcherOpen}>
-              <button
-                type="button"
-                className="top-class-switcher-icon-button"
-                aria-label="Switch class"
-                aria-expanded={classSwitcherOpen}
-                onClick={() => setClassSwitcherOpen((open) => !open)}
-              >
-                <span className="top-class-switcher-icon" aria-hidden="true">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3.57996 5.15991H17.42C19.08 5.15991 20.42 6.49991 20.42 8.15991V11.4799" stroke="#171717" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M6.73996 2L3.57996 5.15997L6.73996 8.32001" stroke="#171717" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M20.42 18.84H6.57996C4.91996 18.84 3.57996 17.5 3.57996 15.84V12.52" stroke="#171717" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M17.26 21.9999L20.42 18.84L17.26 15.6799" stroke="#171717" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-              </button>
-              <span className="top-class-switcher-copy">
-                <span>current class:</span>
-                <strong>{topClassName}</strong>
-              </span>
-              {classSwitcherOpen && (
-                <div className="top-class-switcher-menu" role="listbox" aria-label="Class options">
-                  {classes.map((classRoom) => (
-                    <button
-                      key={classRoom.id}
-                      type="button"
-                      className="top-class-switcher-option"
-                      data-active={classRoom.name === topClassName}
-                      role="option"
-                      aria-selected={classRoom.name === topClassName}
-                      onClick={() => setTopClassName(classRoom.name)}
-                    >
-                      {classRoom.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-          <div className="teacher-profile-menu" ref={teacherMenuRef}>
+          <div className="teacher-profile-menu" ref={classSwitcherRef} data-open={classSwitcherOpen}>
             <div className="teacher-profile-anchor">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="teacher-avatar-button"
-                aria-label="Teacher profile"
-                aria-haspopup="menu"
-                aria-expanded={teacherMenuOpen}
-                onClick={() => setTeacherMenuOpen((isOpen) => !isOpen)}
-              >
+              <span className="teacher-avatar-wrap">
                 <img src={studentAvatarImages[9]} alt="Teacher avatar" />
-              </Button>
-              <span>Ms. Charlotte Bennett</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="teacher-logout-button"
+                  aria-label="Log out"
+                  onClick={() => setClassSwitcherOpen(false)}
+                >
+                  <LogOut size={16} />
+                </Button>
+              </span>
+              <span className="teacher-profile-copy">
+                <strong>Ms. Charlotte Bennett</strong>
+                <button
+                  type="button"
+                  className="teacher-class-trigger"
+                  aria-label="Switch class"
+                  aria-haspopup="listbox"
+                  aria-expanded={classSwitcherOpen}
+                  onClick={() => setClassSwitcherOpen((open) => !open)}
+                >
+                  <span>{topClassName}</span>
+                  <ChevronDown size={16} />
+                </button>
+              </span>
             </div>
-            {teacherMenuOpen && (
-              <Card className="teacher-menu-popover" role="menu">
-                <CardContent>
-                  <Button variant="ghost" role="menuitem" onClick={() => setTeacherMenuOpen(false)}>
-                    <LogOut size={18} />
-                    Log out
-                  </Button>
-                </CardContent>
-              </Card>
+            {classSwitcherOpen && (
+              <div className="teacher-class-menu" role="listbox" aria-label="Class options">
+                {classes.map((classRoom) => (
+                  <button
+                    key={classRoom.id}
+                    type="button"
+                    className="teacher-class-option"
+                    data-active={classRoom.name === topClassName}
+                    role="option"
+                    aria-selected={classRoom.name === topClassName}
+                    onClick={() => {
+                      setTopClassName(classRoom.name);
+                      setClassSwitcherOpen(false);
+                    }}
+                  >
+                    {classRoom.name}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </div>
