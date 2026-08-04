@@ -54,6 +54,8 @@ type PeriodKey = "week" | "month" | "ytd";
 type MyClassSection = "students" | "assigned" | "lexile";
 type ReportTimeRange = "week" | "month" | "semester";
 type ReportDimension = "academic" | "reading" | "writing";
+type ReportSortKey = "lexile" | "ar" | "readingTime" | "readingWords" | "writingTime" | "writingWords";
+type SortDirection = "asc" | "desc";
 
 const classMetricOptions: Array<{ key: ClassMetricKey; label: string }> = [
   { key: "lexile", label: "Lexile Level" },
@@ -250,6 +252,28 @@ function AssignIcon() {
       />
       <path
         d="M17.08 14.15C14.29 12.29 9.73996 12.29 6.92996 14.15C5.65996 15 4.95996 16.15 4.95996 17.38C4.95996 18.61 5.65996 19.75 6.91996 20.59C8.31996 21.53 10.16 22 12 22C13.84 22 15.68 21.53 17.08 20.59C18.34 19.74 19.04 18.6 19.04 17.36C19.03 16.13 18.34 14.99 17.08 14.15Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function CompletionDoneIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path
+        d="M12 2C6.49 2 2 6.49 2 12C2 17.51 6.49 22 12 22C17.51 22 22 17.51 22 12C22 6.49 17.51 2 12 2ZM16.78 9.7L11.11 15.37C10.97 15.51 10.78 15.59 10.58 15.59C10.38 15.59 10.19 15.51 10.05 15.37L7.22 12.54C6.93 12.25 6.93 11.77 7.22 11.48C7.51 11.19 7.99 11.19 8.28 11.48L10.58 13.78L15.72 8.64C16.01 8.35 16.49 8.35 16.78 8.64C17.07 8.93 17.07 9.4 16.78 9.7Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function CompletionWarningIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path
+        d="M21.76 15.92L15.36 4.4C14.5 2.85 13.31 2 12 2C10.69 2 9.49998 2.85 8.63998 4.4L2.23998 15.92C1.42998 17.39 1.33998 18.8 1.98998 19.91C2.63998 21.02 3.91998 21.63 5.59998 21.63H18.4C20.08 21.63 21.36 21.02 22.01 19.91C22.66 18.8 22.57 17.38 21.76 15.92ZM11.25 9C11.25 8.59 11.59 8.25 12 8.25C12.41 8.25 12.75 8.59 12.75 9V14C12.75 14.41 12.41 14.75 12 14.75C11.59 14.75 11.25 14.41 11.25 14V9ZM12.71 17.71C12.66 17.75 12.61 17.79 12.56 17.83C12.5 17.87 12.44 17.9 12.38 17.92C12.32 17.95 12.26 17.97 12.19 17.98C12.13 17.99 12.06 18 12 18C11.94 18 11.87 17.99 11.8 17.98C11.74 17.97 11.68 17.95 11.62 17.92C11.56 17.9 11.5 17.87 11.44 17.83C11.39 17.79 11.34 17.75 11.29 17.71C11.11 17.52 11 17.26 11 17C11 16.74 11.11 16.48 11.29 16.29C11.34 16.25 11.39 16.21 11.44 16.17C11.5 16.13 11.56 16.1 11.62 16.08C11.68 16.05 11.74 16.03 11.8 16.02C11.93 15.99 12.07 15.99 12.19 16.02C12.26 16.03 12.32 16.05 12.38 16.08C12.44 16.1 12.5 16.13 12.56 16.17C12.61 16.21 12.66 16.25 12.71 16.29C12.89 16.48 13 16.74 13 17C13 17.26 12.89 17.52 12.71 17.71Z"
         fill="currentColor"
       />
     </svg>
@@ -1775,6 +1799,7 @@ const genreDistribution = [
 type AssignedTaskStatus = "Completed" | "In Progress" | "Not Started";
 type AssignedTaskRow = {
   id: number;
+  studentId?: string;
   taskName: string;
   recipient: string;
   taskType: string;
@@ -1802,9 +1827,9 @@ const assignedTaskRowsByWeek: Record<string, AssignedTaskRow[]> = {
       recipient: "Ethan Kim",
       taskType: "Video",
       sentAt: "May 11, 10:15",
-      submittedAt: "-",
-      status: "In Progress",
-      completedAt: "-",
+      submittedAt: "May 11, 15:35",
+      status: "Completed",
+      completedAt: "May 11, 15:35",
     },
     {
       id: 3,
@@ -1864,9 +1889,9 @@ const assignedTaskRowsByWeek: Record<string, AssignedTaskRow[]> = {
       recipient: "James Wilson",
       taskType: "Podcast",
       sentAt: "May 06, 08:40",
-      submittedAt: "-",
-      status: "In Progress",
-      completedAt: "-",
+      submittedAt: "May 06, 14:22",
+      status: "Completed",
+      completedAt: "May 06, 14:22",
     },
     {
       id: 4,
@@ -1902,12 +1927,14 @@ function makeAssignedTaskRow(
   recipient: string,
   index: number,
   status: AssignedTaskRow["status"],
+  studentId?: string,
 ): AssignedTaskRow {
   return {
     ...seed,
     id: seed.id * 100 + index,
+    studentId,
     recipient,
-    submittedAt: status === "Completed" ? seed.submittedAt : "-",
+    submittedAt: status === "Completed" || status === "In Progress" ? seed.submittedAt : "-",
     completedAt: status === "Completed" ? seed.completedAt : "-",
     status,
   };
@@ -1926,6 +1953,16 @@ const task011Seeds: AssignedTaskRow[] = [
   },
   {
     id: 12,
+    taskName: "Main Idea Reading Check on Weather and Climate Patterns",
+    recipient: "Aaliyah Johnson",
+    taskType: "Reading",
+    sentAt: "May 15, 09:30",
+    submittedAt: "May 15, 14:46",
+    status: "Completed",
+    completedAt: "May 15, 15:05",
+  },
+  {
+    id: 13,
     taskName: "Podcast Notes on Weather Patterns and Speaker Purpose",
     recipient: "Ethan Kim",
     taskType: "Podcast",
@@ -1935,14 +1972,24 @@ const task011Seeds: AssignedTaskRow[] = [
     completedAt: "May 15, 15:25",
   },
   {
-    id: 13,
+    id: 14,
     taskName: "Video Analysis for Ecosystem Cause and Effect Relationships",
     recipient: "Mia Rodriguez",
     taskType: "Video",
     sentAt: "May 15, 09:30",
-    submittedAt: "-",
-    status: "In Progress",
-    completedAt: "-",
+    submittedAt: "May 15, 15:18",
+    status: "Completed",
+    completedAt: "May 15, 15:18",
+  },
+  {
+    id: 15,
+    taskName: "Short Video Response on Key Details and Vocabulary",
+    recipient: "Liam Chen",
+    taskType: "Video",
+    sentAt: "May 15, 09:30",
+    submittedAt: "May 15, 15:40",
+    status: "Completed",
+    completedAt: "May 15, 15:40",
   },
 ];
 
@@ -1990,32 +2037,26 @@ function getAssignedTaskBatches() {
     "Not Started",
     "Completed",
   ];
-  const task011Statuses: AssignedTaskRow["status"][] = [
-    "Completed",
-    "In Progress",
-    "Not Started",
-    "Completed",
-    "In Progress",
-    "Completed",
-    "Not Started",
-    "In Progress",
-    "Completed",
-  ];
-  const task012Statuses: AssignedTaskRow["status"][] = studentDirectory.map((_, index) =>
-    index % 9 === 0 ? "Not Started" : index % 4 === 0 ? "In Progress" : "Completed",
-  );
-  const task011StudentsByType = [
-    studentDirectory.slice(0, 3),
-    studentDirectory.slice(3, 6),
-    studentDirectory.slice(6, 9),
-  ];
-  const task011Rows = task011Seeds.flatMap((seed, seedIndex) =>
-    task011StudentsByType[seedIndex].map((student, studentIndex) => {
-      const statusIndex = seedIndex * 3 + studentIndex;
-      return makeAssignedTaskRow(seed, student.name, statusIndex, task011Statuses[statusIndex]);
+  function getTask011Status(studentName: string, studentIndex: number, seed: AssignedTaskRow, taskIndex: number): AssignedTaskRow["status"] {
+    if (studentName === "Aaliyah Johnson" || studentName === "Ethan Kim") return "Completed";
+    if (studentName === "Sophia Patel" || studentName === "Noah Thompson") return "Not Started";
+
+    const resourceType = seed.taskType === "Writing prompt" ? "Writing" : seed.taskType;
+    if (resourceType === "Reading") {
+      if ((studentIndex + taskIndex) % 5 === 0) return "In Progress";
+      if ((studentIndex + taskIndex) % 4 === 0) return "Not Started";
+      return "Completed";
+    }
+    return (studentIndex + taskIndex) % 4 === 0 ? "Not Started" : "Completed";
+  }
+  const task012Statuses: AssignedTaskRow["status"][] = studentDirectory.map((_, index) => (index % 9 === 0 ? "Not Started" : "Completed"));
+  const task011Rows = studentDirectory.slice(0, 6).flatMap((student, studentIndex) =>
+    task011Seeds.map((seed, taskIndex) => {
+      const rowIndex = studentIndex * task011Seeds.length + taskIndex;
+      return makeAssignedTaskRow(seed, student.name, rowIndex, getTask011Status(student.name, studentIndex, seed, taskIndex), student.id);
     }),
   );
-  const task012Rows = studentDirectory.map((student, index) => makeAssignedTaskRow(task012Seed, student.name, index, task012Statuses[index]));
+  const task012Rows = studentDirectory.map((student, index) => makeAssignedTaskRow(task012Seed, student.name, index, task012Statuses[index], student.id));
   const sourceBatches = [
     {
       sentAt: task012Seed.sentAt,
@@ -2027,7 +2068,7 @@ function getAssignedTaskBatches() {
     },
     {
       sentAt: latestSeed.sentAt,
-      rows: studentDirectory.slice(0, 8).map((student, index) => makeAssignedTaskRow(latestSeed, student.name, index, classStatuses[index])),
+      rows: studentDirectory.slice(0, 8).map((student, index) => makeAssignedTaskRow(latestSeed, student.name, index, classStatuses[index], student.id)),
     },
     ...Object.values(assignedTaskRowsByWeek)
       .flat()
@@ -2045,6 +2086,59 @@ function getAssignedTaskBatches() {
 }
 
 const assignedTaskBatches = getAssignedTaskBatches();
+
+function getAssignedRowResourceType(taskType: string): ResourceType {
+  return taskType === "Writing prompt" ? "Writing" : (taskType as ResourceType);
+}
+
+function getAssignedRowResource(row: AssignedTaskRow) {
+  const resourceType = getAssignedRowResourceType(row.taskType);
+  return (
+    resources.find((resource) => resource.type === resourceType && row.taskName.toLowerCase().includes(resource.title.split(" ")[0].toLowerCase())) ??
+    resources.find((resource) => resource.type === resourceType) ??
+    resources[0]
+  );
+}
+
+function getAssignedRowLength(row: AssignedTaskRow) {
+  const resource = getAssignedRowResource(row);
+  if ("wordCount" in resource) return `${resource.wordCount.toLocaleString()} words`;
+  return resource.duration;
+}
+
+function getAssignedRowMeta(row: AssignedTaskRow) {
+  const resource = getAssignedRowResource(row);
+  const resourceType = getAssignedRowResourceType(row.taskType);
+  if (resourceType === "Writing") {
+    return `${resource.topic} · ${resource.genre}`;
+  }
+  return `${resource.lexile}L · ${getAssignedRowLength(row)}`;
+}
+
+function getAssignedRowReadingResult(row: AssignedTaskRow) {
+  const seed = row.recipient.length + row.taskName.length + row.sentAt.length;
+  const totalQuestions = 8 + (seed % 5);
+  const correctAnswers = Math.max(1, totalQuestions - (seed % 3));
+  const accuracy = Math.round((correctAnswers / totalQuestions) * 100);
+  return { totalQuestions, correctAnswers, accuracy };
+}
+
+function getAssignedRowWritingResult(row: AssignedTaskRow) {
+  const seed = row.recipient.length + row.taskName.length + row.sentAt.length;
+  const score = 78 + (seed % 18);
+  const wordCount = 260 + (seed % 9) * 48;
+  const versions = 1 + (seed % 4);
+  return { score, wordCount, versions };
+}
+
+function getAssignedRowScore(row: AssignedTaskRow) {
+  if (row.status === "Not Started") return null;
+  const resourceType = getAssignedRowResourceType(row.taskType);
+  if (resourceType === "Writing") return getAssignedRowWritingResult(row).score;
+  if (resourceType === "Reading") return getAssignedRowReadingResult(row).accuracy;
+  if (row.status === "Completed") return 100;
+  return 68 + ((row.id + row.recipient.length) % 21);
+}
 
 const assignStatsPeriodOptions: Array<{ key: AssignStatsPeriod; label: string }> = [
   { key: "week", label: "Week" },
@@ -2423,13 +2517,9 @@ function AssignedTaskSummaryCard() {
   const [period, setPeriod] = useState<AssignStatsPeriod>("week");
 
   return (
-    <Card className="assigned-task-summary-card">
-      <CardContent>
-        <section className="assign-collapsed-stats" aria-label="Task status summary">
-          <AssignStatsBarChart period={period} onPeriodChange={setPeriod} />
-        </section>
-      </CardContent>
-    </Card>
+    <div className="assigned-task-summary-card" aria-label="Task status summary">
+      <AssignStatsBarChart period={period} onPeriodChange={setPeriod} />
+    </div>
   );
 }
 
@@ -2467,6 +2557,52 @@ function LeaderboardArrowIcon() {
       <path
         d="M8.91 19.92L15.43 13.4C16.2 12.63 16.2 11.37 15.43 10.6L8.91 4.07996"
         stroke="#171717"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ReportSortIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10.18 17.15L7.14001 14.11"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10.18 6.84998V17.15"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M13.82 6.84998L16.86 9.88998"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeMiterlimit="10"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M13.82 17.15V6.84998"
+        stroke="currentColor"
         strokeWidth="1.5"
         strokeMiterlimit="10"
         strokeLinecap="round"
@@ -2633,31 +2769,30 @@ function StudentTasksPanel({
   const [statusFilter, setStatusFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
   const [timeFilter, setTimeFilter] = useState("All time");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const statusOptions = ["All", "Completed", "In progress", "Not started"];
   const typeOptions = ["All", "Reading", "Video", "Podcast", "Writing"];
   const timeOptions = ["All time", "This week", "This month"];
-  const taskStatusSequence = ["Completed", "In progress", "Not started", "Completed", "In progress"];
-  const taskTypeSequence = ["Reading", "Video", "Podcast", "Writing", "Reading"];
-  const taskMocks = Array.from({ length: 5 }, (_, index) => {
-    const task = student.tasks[index % student.tasks.length];
-    const status = taskStatusSequence[index];
-    const progress = status === "Completed" ? 100 : status === "In progress" ? Math.max(35, Math.min(88, task.progress)) : 0;
-    return {
-      ...task,
-      id: `${task.id}-${index}`,
-      status,
-      displayType: taskTypeSequence[index],
-      progress,
-      score: status === "Not started" ? null : task.score ?? progress,
-      date: `2026/3/${String(26 + index).padStart(2, "0")} 15:00`,
-    };
-  });
-  const visibleTasks = taskMocks.filter((task, index) => {
+  const studentTaskRows = assignedTaskBatches
+    .flatMap((batch) => batch.rows)
+    .filter((row) => row.studentId === student.id || row.recipient === student.name);
+  const visibleTasks = studentTaskRows.filter((task) => {
+    const displayType = getAssignedRowResourceType(task.taskType);
     const matchesStatus = statusFilter === "All" || task.status.toLowerCase() === statusFilter.toLowerCase();
-    const matchesType = typeFilter === "All" || task.displayType === typeFilter;
-    const matchesTime = timeFilter !== "This week" || index < 2;
+    const matchesType = typeFilter === "All" || displayType === typeFilter;
+    const matchesTime = timeFilter !== "This week" || task.sentAt.startsWith("May 15") || task.sentAt.startsWith("May 16");
     return matchesStatus && matchesType && matchesTime;
   });
+  const totalPages = Math.max(1, Math.ceil(visibleTasks.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStartIndex = (currentPage - 1) * pageSize;
+  const pagedTasks = visibleTasks.slice(pageStartIndex, pageStartIndex + pageSize);
+  const pageEndIndex = Math.min(pageStartIndex + pagedTasks.length, visibleTasks.length);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, typeFilter, timeFilter, student.id]);
 
   return (
     <div className="student-task-dialog-content">
@@ -2676,32 +2811,63 @@ function StudentTasksPanel({
         </label>
       </div>
 
-      <div className="student-task-card-list">
-        {visibleTasks.map((task, index) => {
-          const genre = ["Science", "Arts & Culture", "Earth Science"][index % 3];
-          const accuracy = task.score ?? task.progress;
+      <div className="student-task-table" role="table" aria-label={`${student.name} task list`}>
+        <div className="student-task-table-head" role="row">
+          <span role="columnheader">Task Info</span>
+          <span role="columnheader">Completion</span>
+          <span role="columnheader">Operation</span>
+        </div>
+        {pagedTasks.map((task, index) => {
+          const displayType = getAssignedRowResourceType(task.taskType);
+          const score = getAssignedRowScore(task);
+          const operation = displayType === "Writing" ? "Discussion" : task.status === "Completed" || task.status === "In Progress" ? "Feedback" : "";
           return (
-            <div key={task.id} className="student-task-card" data-status={task.status.toLowerCase().replace(/\s+/g, "-")}>
-              <div className="student-task-card-head">
-                <h3>{task.title}</h3>
+            <div key={task.id} className="student-task-table-row" role="row">
+              <div className="student-task-info-cell" role="cell" data-type={displayType}>
+                <strong>{task.taskName}</strong>
+                <span>
+                  <TypeFilterIcon type={displayType} />
+                  {getAssignedRowMeta(task)}
+                </span>
+              </div>
+              <div className="student-task-completion-cell" role="cell">
                 <TaskStatusPill status={task.status} />
+                {score === null ? <span className="student-task-empty-value">-</span> : <strong>{score}%</strong>}
               </div>
-              <div className="student-task-tags">
-                <span>{student.readingLevel + index * 20} L</span>
-                <span data-tone="type">{task.displayType}</span>
-                <span>{genre}</span>
+              <div className="student-task-operation-cell" role="cell">
+                {operation ? (
+                  <Button type="button" variant="outline" className="student-task-feedback-button">
+                    {operation}
+                  </Button>
+                ) : (
+                  <span className="student-task-empty-value">-</span>
+                )}
               </div>
-              <div className="student-task-accuracy">
-                <span>Accuracy</span>
-                <div className="progress-track">
-                  <i style={{ width: `${accuracy}%` }} />
-                </div>
-                <strong>{accuracy}%</strong>
-              </div>
-              <time>{task.date}</time>
             </div>
           );
         })}
+        <div className="student-task-pagination">
+          <span>
+            {visibleTasks.length === 0 ? "0" : pageStartIndex + 1}-{pageEndIndex} / {visibleTasks.length}
+          </span>
+          <div>
+            <Button type="button" variant="outline" className="student-task-page-button" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+              Previous
+            </Button>
+            <strong>
+              {currentPage} / {totalPages}
+            </strong>
+            <Button
+              type="button"
+              variant="outline"
+              className="student-task-page-button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -3132,8 +3298,247 @@ function AssignedTaskWeekSummary({ title }: { title: string }) {
   );
 }
 
+function AssignedTaskFeedbackDialog({
+  row,
+  resource,
+  meta,
+  onClose,
+}: {
+  row: AssignedTaskRow;
+  resource: Resource;
+  meta: string;
+  onClose: () => void;
+}) {
+  const [taskContentExpanded, setTaskContentExpanded] = useState(false);
+  const feedbackQuestions = [
+    {
+      id: 1,
+      question: "Why does the passage call footwork the engine of a badminton player's game?",
+      options: [
+        ["A", "Because it controls speed, balance, consistency, and endurance."],
+        ["B", "Because it makes racket strings more powerful."],
+        ["C", "Because it replaces the need for strong strokes."],
+        ["D", "Because it slows the shuttlecock down."],
+      ],
+      correct: "A",
+      selected: "A",
+    },
+    {
+      id: 2,
+      question: "What should a player do when lunging forward to protect the knee?",
+      options: [
+        ["A", "Land on the toes first and keep the heel raised."],
+        ["B", "Land heel first and roll onto the flat of the foot."],
+        ["C", "Cross both legs before reaching the shuttlecock."],
+        ["D", "Keep the opposite arm close to the body."],
+      ],
+      correct: "B",
+      selected: "B",
+    },
+    {
+      id: 3,
+      question: "When is the split-step performed?",
+      options: [
+        ["A", "After the shuttlecock lands."],
+        ["B", "Only after a smash."],
+        ["C", "As the opponent strikes the shuttlecock."],
+        ["D", "Before the player serves."],
+      ],
+      correct: "C",
+      selected: "B",
+    },
+    {
+      id: 4,
+      question: "Which movement pattern is described as one foot chasing the other without crossing?",
+      options: [
+        ["A", "Crossover steps"],
+        ["B", "Scissor kick"],
+        ["C", "Base recovery"],
+        ["D", "Chasse steps"],
+      ],
+      correct: "D",
+      selected: "D",
+    },
+    {
+      id: 5,
+      question: "What is the purpose of returning to the base position?",
+      options: [
+        ["A", "To wait near the net for every shot."],
+        ["B", "To avoid being caught out of position for the next return."],
+        ["C", "To make every shot a backhand shot."],
+        ["D", "To reduce the need for a split-step."],
+      ],
+      correct: "B",
+      selected: "B",
+    },
+    {
+      id: 6,
+      question: "Which drill asks players to practice movement patterns without a shuttlecock?",
+      options: [
+        ["A", "Shadow badminton"],
+        ["B", "Multi-shuttle feeding"],
+        ["C", "Agility ladder drills"],
+        ["D", "Plyometric box jumps"],
+      ],
+      correct: "A",
+      selected: "C",
+    },
+    {
+      id: 7,
+      question: "Why are rear-court movements described as mechanically demanding?",
+      options: [
+        ["A", "They only use the non-racket arm."],
+        ["B", "They require players to stop using recovery steps."],
+        ["C", "They often require rotation, backward movement, and weight transfer."],
+        ["D", "They happen only during slow rallies."],
+      ],
+      correct: "C",
+      selected: "C",
+    },
+  ] as const;
+  const [activeQuestionId, setActiveQuestionId] = useState<number>(feedbackQuestions[0].id);
+  const activeQuestion = feedbackQuestions.find((question) => question.id === activeQuestionId) ?? feedbackQuestions[0];
+  const feedbackMessages = [
+    {
+      id: "sent-1",
+      time: "May 15, 16:10",
+      text: "You identified the main idea clearly. Recheck question 4 and add one more text detail next time.",
+    },
+    {
+      id: "sent-2",
+      time: "May 16, 09:25",
+      text: "Good progress on evidence matching. Keep highlighting the sentence that proves each answer.",
+    },
+  ];
+
+  return (
+    <div className="feedback-backdrop" role="dialog" aria-modal="true" aria-label={`Feedback for ${row.recipient}`}>
+      <Card className="assigned-feedback-dialog">
+        <CardHeader>
+          <div>
+            <CardDescription>Feedback</CardDescription>
+            <CardTitle>{row.recipient}</CardTitle>
+          </div>
+          <CardAction>
+            <Button variant="ghost" size="icon-sm" aria-label="Close feedback" onClick={onClose}>
+              <X size={18} />
+            </Button>
+          </CardAction>
+        </CardHeader>
+        <CardContent className="assigned-feedback-layout">
+          <section className="assigned-feedback-left">
+            <Card className="assigned-feedback-task-card">
+              <CardContent>
+                <div className="assigned-feedback-task-head" data-type={row.taskType === "Writing prompt" ? "Writing" : row.taskType}>
+                  <div className="assigned-feedback-task-summary">
+                    <button
+                      type="button"
+                      className="assigned-feedback-task-expand"
+                      aria-label={taskContentExpanded ? "Collapse task content" : "Expand task content"}
+                      aria-expanded={taskContentExpanded}
+                      onClick={() => setTaskContentExpanded((current) => !current)}
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                    <div>
+                      <strong>{resource.title}</strong>
+                      <div className="assigned-feedback-task-tags">
+                        <span>{meta}</span>
+                        <span>{resource.genre}</span>
+                        <span>{resource.topic}</span>
+                        <span>{row.sentAt}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {taskContentExpanded && <p className="assigned-feedback-task-body">{resource.description}</p>}
+              </CardContent>
+            </Card>
+            <Card className="assigned-feedback-result-card">
+              <CardContent>
+                <div className="assigned-feedback-result-head">
+                  <strong>Student Completion</strong>
+                  <Badge variant="secondary" className="assigned-task-status" data-status={row.status}>
+                    {row.status}
+                  </Badge>
+                </div>
+                <div className="assigned-feedback-question-tabs" aria-label="Quiz questions">
+                  {feedbackQuestions.map((question) => {
+                    const answeredCorrectly = question.selected === question.correct;
+                    return (
+                      <button
+                        key={question.id}
+                        type="button"
+                        data-state={answeredCorrectly ? "correct" : "incorrect"}
+                        data-active={activeQuestion.id === question.id}
+                        aria-label={`Question ${question.id}`}
+                        onClick={() => setActiveQuestionId(question.id)}
+                      >
+                        {question.id}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="assigned-feedback-question-card">
+                  <h3>{activeQuestion.question}</h3>
+                  <div className="assigned-feedback-option-list">
+                    {activeQuestion.options.map(([letter, text]) => {
+                      const isCorrect = letter === activeQuestion.correct;
+                      const isSelected = letter === activeQuestion.selected;
+                      return (
+                        <div
+                          className="assigned-feedback-option"
+                          data-correct={isCorrect}
+                          data-selected={isSelected}
+                          data-wrong={isSelected && !isCorrect}
+                          key={letter}
+                        >
+                          <strong>{letter}</strong>
+                          <span>{text}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+          <aside className="assigned-feedback-right">
+            <div className="assigned-feedback-chat-list">
+              {feedbackMessages.map((message) => (
+                <div className="assigned-feedback-chat-message" key={message.id}>
+                  <span>{message.time}</span>
+                  <p>{message.text}</p>
+                </div>
+              ))}
+            </div>
+            <div className="assigned-feedback-composer">
+              <textarea placeholder="Write feedback to the student..." />
+              <div>
+                <Button variant="outline" size="icon" aria-label="Record voice feedback">
+                  <Mic size={18} />
+                </Button>
+                <Button variant="outline" className="assigned-feedback-ai-button">
+                  <MessageSquareText size={18} />
+                  AI Feedback
+                </Button>
+                <Button>
+                  <Send size={18} />
+                  Send
+                </Button>
+              </div>
+            </div>
+          </aside>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function AssignedTaskListCard() {
   const [expandedBatchKey, setExpandedBatchKey] = useState<string | null>(assignedTaskBatches[0]?.key ?? null);
+  const [expandedStudentKeys, setExpandedStudentKeys] = useState<Record<string, boolean>>({});
+  const [activeFeedbackRow, setActiveFeedbackRow] = useState<AssignedTaskRow | null>(null);
   const [completionTooltip, setCompletionTooltip] = useState<{ detail: AssignedCompletionDetail; x: number; y: number } | null>(null);
 
   function getAssignedTaskResourceType(taskType: string): ResourceType {
@@ -3169,13 +3574,11 @@ function AssignedTaskListCard() {
     const resourceType = getAssignedTaskResourceType(row.taskType);
     if (resourceType !== "Reading" && resourceType !== "Writing") return null;
 
-    const seed = row.recipient.length + row.taskName.length + row.sentAt.length;
     if (resourceType === "Reading") {
-      const totalQuestions = 8 + (seed % 5);
-      const correctAnswers = Math.max(1, totalQuestions - (seed % 3));
+      const { totalQuestions, correctAnswers, accuracy } = getAssignedReadingResult(row);
       return {
         kind: "Reading",
-        label: `${Math.round((correctAnswers / totalQuestions) * 100)}%`,
+        label: `${accuracy}%`,
         totalQuestions,
         correctAnswers,
       };
@@ -3189,6 +3592,14 @@ function AssignedTaskListCard() {
       wordCount: writingResult.wordCount,
       versions: writingResult.versions,
     };
+  }
+
+  function getAssignedReadingResult(row: AssignedTaskRow) {
+    const seed = row.recipient.length + row.taskName.length + row.sentAt.length;
+    const totalQuestions = 8 + (seed % 5);
+    const correctAnswers = Math.max(1, totalQuestions - (seed % 3));
+    const accuracy = Math.round((correctAnswers / totalQuestions) * 100);
+    return { totalQuestions, correctAnswers, accuracy };
   }
 
   function getAssignedWritingResult(row: AssignedTaskRow) {
@@ -3206,9 +3617,88 @@ function AssignedTaskListCard() {
   function getAssignedTaskOperation(row: AssignedTaskRow) {
     const resourceType = getAssignedTaskResourceType(row.taskType);
     if (resourceType === "Writing") return "Discussion";
-    if (row.status !== "Completed") return "";
-    if (resourceType === "Reading") return "Feedback";
+    if (resourceType === "Reading" && (row.status === "Completed" || row.status === "In Progress")) return "Feedback";
     return "";
+  }
+
+  function getAssignedStudent(row: AssignedTaskRow) {
+    return studentDirectory.find((student) => student.id === row.studentId || student.name === row.recipient);
+  }
+
+  function getStudentTaskGroups(rows: AssignedTaskRow[]) {
+    const groupMap = new Map<string, { key: string; name: string; student?: StudentDirectoryEntry; rows: AssignedTaskRow[] }>();
+    rows.forEach((row) => {
+      const student = getAssignedStudent(row);
+      const key = student?.id ?? row.recipient;
+      const group = groupMap.get(key) ?? { key, name: row.recipient, student, rows: [] };
+      group.rows.push(row);
+      groupMap.set(key, group);
+    });
+    return Array.from(groupMap.values());
+  }
+
+  function renderStudentTaskRows(rows: AssignedTaskRow[]) {
+    return (
+      <div className="assigned-task-table assigned-student-task-table" role="table" aria-label="Assigned student task list">
+        <div className="assigned-task-table-head" role="row">
+          <span role="columnheader">Task Info</span>
+          <span role="columnheader">Completion</span>
+          <span role="columnheader">Operation</span>
+        </div>
+        {rows.map((row) => {
+          const completionDetail = getAssignedTaskCompletionDetail(row);
+          const operation = getAssignedTaskOperation(row);
+
+          return (
+            <div className="assigned-task-table-row" role="row" key={`${row.id}-${row.recipient}-${row.taskName}`}>
+              <div className="assigned-task-info-cell" role="cell" data-type={getAssignedTaskResourceType(row.taskType)}>
+                <strong className="assigned-task-name">
+                  <span>{row.taskName}</span>
+                </strong>
+                <span className="assigned-task-meta">
+                  <TypeFilterIcon type={getAssignedTaskResourceType(row.taskType)} />
+                  {getAssignedTaskMeta(row)}
+                </span>
+              </div>
+              <span className="assigned-task-completion-cell" role="cell">
+                <Badge variant="secondary" className="assigned-task-status" data-status={row.status}>
+                  {row.status}
+                </Badge>
+                {completionDetail ? (
+                  <strong
+                    className="assigned-task-score"
+                    onMouseEnter={(event) => showCompletionTooltip(event, completionDetail)}
+                    onMouseMove={(event) => showCompletionTooltip(event, completionDetail)}
+                    onMouseLeave={() => setCompletionTooltip(null)}
+                  >
+                    {completionDetail.label}
+                  </strong>
+                ) : (
+                  <span className="assigned-task-no-score">-</span>
+                )}
+              </span>
+              <span className="assigned-task-operation-cell" role="cell">
+                {operation ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="assigned-task-operation-button"
+                    onClick={() => {
+                      if (operation === "Feedback") setActiveFeedbackRow(row);
+                    }}
+                  >
+                    {operation}
+                  </Button>
+                ) : (
+                  <span className="assigned-task-no-score">-</span>
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
   }
 
   function renderTaskBatchSummary(rows: AssignedTaskRow[]) {
@@ -3258,11 +3748,16 @@ function AssignedTaskListCard() {
         <div className="assigned-writing-task-panel">
           <div className="assigned-writing-task-info" data-type="Writing">
             <TypeFilterIcon type="Writing" />
-            <div>
+            <div className="assigned-writing-task-copy">
               <strong>{taskRow.taskName}</strong>
               <span>{getAssignedTaskMeta(taskRow)}</span>
             </div>
-            <em>{rows.length} students</em>
+            <div className="assigned-writing-task-actions">
+              <em>{rows.length} students</em>
+              <Button type="button" variant="outline" size="sm" className="assigned-writing-discussion-button">
+                Discussion
+              </Button>
+            </div>
           </div>
           <div className="assigned-task-table assigned-writing-task-table" role="table" aria-label="Assigned writing task list">
             <div className="assigned-task-table-head" role="row">
@@ -3271,7 +3766,6 @@ function AssignedTaskListCard() {
               <span role="columnheader">Writing Words</span>
               <span role="columnheader">Writing Score</span>
               <span role="columnheader">Versions</span>
-              <span role="columnheader">Operation</span>
             </div>
             {rows.map((row) => {
               const writingResult = getAssignedWritingResult(row);
@@ -3288,15 +3782,56 @@ function AssignedTaskListCard() {
                   <span role="cell">{hasWritingData ? writingResult.wordCount.toLocaleString() : "-"}</span>
                   <span role="cell">{row.status === "Completed" ? writingResult.score : "-"}</span>
                   <span role="cell">{hasWritingData ? writingResult.versions : "-"}</span>
-                  <span className="assigned-task-operation-cell" role="cell">
-                    <Button type="button" variant="outline" size="sm" className="assigned-task-operation-button">
-                      Discussion
-                    </Button>
-                  </span>
                 </div>
               );
             })}
           </div>
+        </div>
+      );
+    }
+
+    if (rows.length > 1) {
+      const studentGroups = getStudentTaskGroups(rows);
+      return (
+        <div className="assigned-task-student-list">
+          {studentGroups.map((group) => {
+            const studentExpanded = expandedStudentKeys[group.key] ?? false;
+            const completedCount = group.rows.filter((row) => row.status === "Completed").length;
+            const studentStatusIcon =
+              completedCount === group.rows.length ? (
+                <span className="assigned-task-student-state-icon" data-state="completed" title="All tasks completed">
+                  <CompletionDoneIcon />
+                </span>
+              ) : completedCount === 0 ? (
+                <span className="assigned-task-student-state-icon" data-state="not-started" title="No tasks completed">
+                  <CompletionWarningIcon />
+                </span>
+              ) : null;
+
+            return (
+              <section className="assigned-task-student-card" data-expanded={studentExpanded} key={group.key}>
+                <button
+                  type="button"
+                  className="assigned-task-student-toggle"
+                  aria-expanded={studentExpanded}
+                  onClick={() => setExpandedStudentKeys((current) => ({ ...current, [group.key]: !(current[group.key] ?? false) }))}
+                >
+                  <span className="assigned-task-student-avatar" style={group.student?.avatarImage ? undefined : { backgroundColor: group.student?.avatarColor }}>
+                    {group.student?.avatarImage ? <img src={group.student.avatarImage} alt="" /> : getInitials(group.name)}
+                  </span>
+                  <span className="assigned-task-student-copy">
+                    <strong>{group.name}</strong>
+                    <span className="assigned-task-student-progress">
+                      <em>{completedCount}/{group.rows.length}</em>
+                      {studentStatusIcon}
+                    </span>
+                  </span>
+                  <ChevronRight size={18} />
+                </button>
+                {studentExpanded && renderStudentTaskRows(group.rows)}
+              </section>
+            );
+          })}
         </div>
       );
     }
@@ -3344,7 +3879,15 @@ function AssignedTaskListCard() {
               </span>
               <span className="assigned-task-operation-cell" role="cell">
                 {operation ? (
-                  <Button type="button" variant="outline" size="sm" className="assigned-task-operation-button">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="assigned-task-operation-button"
+                    onClick={() => {
+                      if (operation === "Feedback") setActiveFeedbackRow(row);
+                    }}
+                  >
                     {operation}
                   </Button>
                 ) : (
@@ -3392,6 +3935,14 @@ function AssignedTaskListCard() {
             );
           })}
         </div>
+        {activeFeedbackRow && (
+          <AssignedTaskFeedbackDialog
+            row={activeFeedbackRow}
+            resource={getAssignedTaskResource(activeFeedbackRow)}
+            meta={getAssignedTaskMeta(activeFeedbackRow)}
+            onClose={() => setActiveFeedbackRow(null)}
+          />
+        )}
         {completionTooltip && (
           <div
             className="assigned-task-score-tooltip"
@@ -4332,33 +4883,36 @@ function StudentReportLineChart({
   label,
   unit,
   data,
-  tone,
+  classAverageData,
 }: {
   label: string;
   unit: string;
   data: Array<{ label: string; value: number }>;
-  tone: "green" | "amber" | "blue" | "purple";
+  classAverageData: Array<{ label: string; value: number }>;
 }) {
   const width = 360;
   const height = 210;
   const padding = { top: 28, right: 24, bottom: 34, left: 46 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
-  const values = data.map((item) => item.value);
+  const values = [...data.map((item) => item.value), ...classAverageData.map((item) => item.value)];
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
   const range = Math.max(1, maxValue - minValue);
-  const yMin = Math.max(0, Math.floor((minValue - range * 0.18) / 10) * 10);
-  const yMax = Math.ceil((maxValue + range * 0.18) / 10) * 10;
+  const tickBase = maxValue > 1000 ? 100 : maxValue > 100 ? 10 : 1;
+  const yMin = Math.max(0, Math.floor((minValue - range * 0.18) / tickBase) * tickBase);
+  const yMax = Math.ceil((maxValue + range * 0.18) / tickBase) * tickBase;
   const yRange = Math.max(1, yMax - yMin);
   const xFor = (index: number) => padding.left + (chartWidth / (data.length - 1)) * index;
   const yFor = (value: number) => padding.top + chartHeight - ((value - yMin) / yRange) * chartHeight;
   const points = data.map((item, index) => ({ ...item, x: xFor(index), y: yFor(item.value) }));
+  const classAveragePoints = classAverageData.map((item, index) => ({ ...item, x: xFor(index), y: yFor(item.value) }));
   const pointString = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const classAveragePointString = classAveragePoints.map((point) => `${point.x},${point.y}`).join(" ");
   const ticks = [yMin, Math.round((yMin + yMax) / 2), yMax];
 
   return (
-    <div className="student-report-chart" data-tone={tone}>
+    <div className="student-report-chart">
       <div className="student-report-chart-head">
         <span>{label}</span>
         <em>{unit}</em>
@@ -4375,6 +4929,7 @@ function StudentReportLineChart({
             </g>
           );
         })}
+        <polyline points={classAveragePointString} className="student-report-line student-report-class-line" />
         <polyline points={pointString} className="student-report-line" />
         {points.map((point) => (
           <g key={point.label}>
@@ -4388,6 +4943,10 @@ function StudentReportLineChart({
           </g>
         ))}
       </svg>
+      <div className="student-report-chart-legend" aria-hidden="true">
+        <span data-line="student">Current Student</span>
+        <span data-line="class">Class Average</span>
+      </div>
     </div>
   );
 }
@@ -4530,6 +5089,30 @@ function getStudentReportData(student: StudentDetailStudent, timeRange: ReportTi
   return reportData[timeRange];
 }
 
+function getReportClassAverageData(timeRange: ReportTimeRange): StudentReadingReportData {
+  const classSeries = lexileLeaderboard.map((student) => getStudentReportData(getStudentDetailFromReportStudent(student), timeRange));
+  const averageSeries = (metric: keyof StudentReadingReportData) =>
+    classSeries[0][metric].map((point, index) => ({
+      label: point.label,
+      value: Math.round(classSeries.reduce((sum, series) => sum + series[metric][index].value, 0) / classSeries.length),
+    }));
+
+  return {
+    lexile: averageSeries("lexile"),
+    readingTime: averageSeries("readingTime"),
+    readingWords: averageSeries("readingWords"),
+    writingTime: averageSeries("writingTime"),
+    writingWords: averageSeries("writingWords"),
+  };
+}
+
+function getArTrendFromLexile(data: ReportTrendPoint[], finalAr?: number): ReportTrendPoint[] {
+  return data.map((point, index) => ({
+    label: point.label,
+    value: index === data.length - 1 && finalAr !== undefined ? Number(finalAr.toFixed(1)) : convertLexileToAr(point.value),
+  }));
+}
+
 function summarizeTrend(data: ReportTrendPoint[]) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   const first = data[0]?.value ?? 0;
@@ -4545,6 +5128,26 @@ function getChangeCopy(delta: number, unit: string, percent: number) {
   if (delta > 0) return `+${absDelta}${unit} (${percent > 0 ? "+" : ""}${percent}%)`;
   if (delta < 0) return `-${absDelta}${unit} (${percent}%)`;
   return `No change`;
+}
+
+function getReportGrowthDirection(studentId: string, metricOffset: number) {
+  const numericId = Number(studentId.replace(/\D/g, "")) || 0;
+  return (numericId + metricOffset) % 5 < 2 ? -1 : 1;
+}
+
+function applyReportGrowthDirection(value: number, studentId: string, metricOffset: number) {
+  return Math.round(Math.abs(value) * getReportGrowthDirection(studentId, metricOffset));
+}
+
+function formatSignedGrowth(value: number, unit = "") {
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+  const spacing = unit ? " " : "";
+  return `${sign}${Math.abs(value).toLocaleString()}${unit ? `${spacing}${unit}` : ""}`;
+}
+
+function formatSignedDecimalGrowth(value: number) {
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+  return `${sign}${Math.abs(value).toFixed(1)}`;
 }
 
 function ReadingReportSummaryCard({ timeRange }: { timeRange: ReportTimeRange }) {
@@ -4747,44 +5350,111 @@ function ClassDistributionTabs() {
 function LexileLeaderboardCard({
   onOpenStudent,
   timeRange,
+  onTimeRangeChange,
 }: {
   onOpenStudent: (student: StudentDetailStudent, tab?: StudentDetailTab) => void;
   timeRange: ReportTimeRange;
+  onTimeRangeChange: (timeRange: ReportTimeRange) => void;
 }) {
   const [activeDimension, setActiveDimension] = useState<ReportDimension>("academic");
+  const [sortKey, setSortKey] = useState<ReportSortKey>("lexile");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   type ReportLeaderboardRow = {
     rank: number;
     student: StudentDetailStudent;
+    lexileGrowth: number;
+    arGrowth: number;
     readingTime: number;
+    readingTimeGrowth: number;
     readingWords: number;
+    readingWordsGrowth: number;
     writingTime: number;
+    writingTimeGrowth: number;
     writingWords: number;
+    writingWordsGrowth: number;
   };
+  const sortValueByKey: Record<ReportSortKey, (row: ReportLeaderboardRow) => number> = {
+    lexile: (row) => row.student.lexile,
+    ar: (row) => row.student.ar,
+    readingTime: (row) => row.readingTime,
+    readingWords: (row) => row.readingWords,
+    writingTime: (row) => row.writingTime,
+    writingWords: (row) => row.writingWords,
+  };
+  const handleSort = (key: ReportSortKey) => {
+    if (key === sortKey) {
+      setSortDirection((current) => (current === "desc" ? "asc" : "desc"));
+      return;
+    }
+
+    setSortKey(key);
+    setSortDirection("desc");
+  };
+  const sortButton = (key: ReportSortKey, label: string) => (
+    <button
+      type="button"
+      className="report-sort-button"
+      aria-label={`Sort by ${label}`}
+      aria-pressed={sortKey === key}
+      data-active={sortKey === key}
+      data-direction={sortKey === key ? sortDirection : undefined}
+      onClick={() => handleSort(key)}
+    >
+      <span>{label}</span>
+      <ReportSortIcon />
+    </button>
+  );
   const rows: ReportLeaderboardRow[] = studentDirectory
     .map((directoryStudent) => {
       const student = getStudentDetailFromDirectory(directoryStudent);
       const reportData = getStudentReportData(student, timeRange);
+      const lexile = summarizeTrend(reportData.lexile);
+      const readingTime = summarizeTrend(reportData.readingTime);
+      const readingWords = summarizeTrend(reportData.readingWords);
+      const writingTime = summarizeTrend(reportData.writingTime);
+      const writingWords = summarizeTrend(reportData.writingWords);
+      const arStart = convertLexileToAr(lexile.first);
+      const arGrowth = Number((student.ar - arStart).toFixed(1));
 
       return {
         rank: 0,
         student,
-        readingTime: summarizeTrend(reportData.readingTime).total,
-        readingWords: summarizeTrend(reportData.readingWords).total,
-        writingTime: summarizeTrend(reportData.writingTime).total,
-        writingWords: summarizeTrend(reportData.writingWords).total,
+        lexileGrowth: applyReportGrowthDirection(lexile.delta, student.id, 1),
+        arGrowth: Number((Math.abs(arGrowth) * getReportGrowthDirection(student.id, 2)).toFixed(1)),
+        readingTime: readingTime.total,
+        readingTimeGrowth: applyReportGrowthDirection(readingTime.delta, student.id, 3),
+        readingWords: readingWords.total,
+        readingWordsGrowth: applyReportGrowthDirection(readingWords.delta, student.id, 4),
+        writingTime: writingTime.total,
+        writingTimeGrowth: applyReportGrowthDirection(writingTime.delta, student.id, 5),
+        writingWords: writingWords.total,
+        writingWordsGrowth: applyReportGrowthDirection(writingWords.delta, student.id, 6),
       };
     })
-    .sort((a, b) => b.readingWords - a.readingWords || b.student.lexile - a.student.lexile)
+    .sort((a, b) => {
+      const sortDifference = sortValueByKey[sortKey](a) - sortValueByKey[sortKey](b);
+      const directedDifference = sortDirection === "asc" ? sortDifference : -sortDifference;
+      return directedDifference || b.readingWords - a.readingWords || a.student.name.localeCompare(b.student.name);
+    })
     .map((row, index) => ({ ...row, rank: index + 1 }));
 
   return (
     <Card className="lexile-leaderboard-card report-leaderboard-card">
       <CardHeader>
-        <CardTitle>
-          <Trophy size={22} />
-          Report Leaderboard
-        </CardTitle>
         <CardAction>
+          <div className="student-report-range" role="tablist" aria-label="Report time range">
+            {reportTimeRangeOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                role="tab"
+                aria-selected={timeRange === option.key}
+                onClick={() => onTimeRangeChange(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
           <div className="report-dimension-tabs" role="tablist" aria-label="Report dimension">
             {reportDimensionOptions.map((option) => (
               <button
@@ -4799,94 +5469,197 @@ function LexileLeaderboardCard({
             ))}
           </div>
         </CardAction>
-        <CardDescription>{rows.length} students ranked by reading words in the selected range.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="lexile-leaderboard-head">
-          <span>#</span>
-          <span>Student</span>
-          <span data-dimension="academic" data-active={activeDimension === "academic"}>Lexile</span>
-          <span data-dimension="academic" data-active={activeDimension === "academic"}>AR</span>
-          <span data-dimension="reading" data-active={activeDimension === "reading"}>Reading Time</span>
-          <span data-dimension="reading" data-active={activeDimension === "reading"}>Reading Words</span>
-          <span data-dimension="writing" data-active={activeDimension === "writing"}>Writing Time</span>
-          <span data-dimension="writing" data-active={activeDimension === "writing"}>Writing Words</span>
-          <span />
-        </div>
-        {rows.map((row) => (
-          <div
-            className="lexile-leaderboard-row"
-            key={row.student.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => onOpenStudent(row.student, "report")}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onOpenStudent(row.student, "report");
-              }
-            }}
-          >
-            <Badge variant="secondary" className="rank-badge" data-rank={row.rank}>
-              {row.rank}
-            </Badge>
-            <div className="leaderboard-student">
-              <span className="leaderboard-avatar" style={row.student.avatarImage ? undefined : { backgroundColor: row.student.color }}>
-                {row.student.avatarImage ? <img src={row.student.avatarImage} alt="" /> : row.student.avatar}
-              </span>
-              <strong>{row.student.name}</strong>
+        <div className="report-leaderboard-table" data-active-dimension={activeDimension}>
+          <div className="lexile-leaderboard-head" data-active-dimension={activeDimension}>
+            <span>#</span>
+            <span>Student</span>
+            <div className="report-metric-group" data-dimension="academic" data-active={activeDimension === "academic"}>
+              {sortButton("lexile", "Lexile")}
+              {activeDimension === "academic" && (
+                <span>Lexile Growth</span>
+              )}
+              {sortButton("ar", "AR")}
+              {activeDimension === "academic" && <span>AR Growth</span>}
             </div>
-            <span data-dimension="academic" data-active={activeDimension === "academic"}>{row.student.lexile}L</span>
-            <span data-dimension="academic" data-active={activeDimension === "academic"}>{row.student.ar}</span>
-            <span data-dimension="reading" data-active={activeDimension === "reading"}>{row.readingTime.toLocaleString()} min</span>
-            <span data-dimension="reading" data-active={activeDimension === "reading"}>{row.readingWords.toLocaleString()}</span>
-            <span data-dimension="writing" data-active={activeDimension === "writing"}>{row.writingTime.toLocaleString()} min</span>
-            <span data-dimension="writing" data-active={activeDimension === "writing"}>{row.writingWords.toLocaleString()}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="leaderboard-detail-button"
-              aria-label={`View ${row.student.name} report details`}
-              onClick={(event) => {
-                event.stopPropagation();
-                onOpenStudent(row.student, "report");
+            <div className="report-metric-group" data-dimension="reading" data-active={activeDimension === "reading"}>
+              {sortButton("readingTime", "Reading Time")}
+              {activeDimension === "reading" && (
+                <span>Time Growth</span>
+              )}
+              {sortButton("readingWords", "Reading Words")}
+              {activeDimension === "reading" && <span>Words Growth</span>}
+            </div>
+            <div className="report-metric-group" data-dimension="writing" data-active={activeDimension === "writing"}>
+              {sortButton("writingTime", "Writing Time")}
+              {activeDimension === "writing" && (
+                <span>Time Growth</span>
+              )}
+              {sortButton("writingWords", "Writing Words")}
+              {activeDimension === "writing" && <span>Words Growth</span>}
+            </div>
+            <span />
+          </div>
+          {rows.map((row) => (
+            <div
+              className="lexile-leaderboard-row"
+              data-active-dimension={activeDimension}
+              key={row.student.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => onOpenStudent(row.student, "report")}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onOpenStudent(row.student, "report");
+                }
               }}
             >
-              <LeaderboardArrowIcon />
-            </Button>
-          </div>
-        ))}
+              <Badge variant="secondary" className="rank-badge" data-rank={row.rank}>
+                {row.rank}
+              </Badge>
+              <div className="leaderboard-student">
+                <span className="leaderboard-avatar" style={row.student.avatarImage ? undefined : { backgroundColor: row.student.color }}>
+                  {row.student.avatarImage ? <img src={row.student.avatarImage} alt="" /> : row.student.avatar}
+                </span>
+                <strong>{row.student.name}</strong>
+              </div>
+              <div className="report-metric-group" data-dimension="academic" data-active={activeDimension === "academic"}>
+                <span>{row.student.lexile}L</span>
+                {activeDimension === "academic" && (
+                  <span data-growth={row.lexileGrowth < 0 ? "down" : row.lexileGrowth > 0 ? "up" : "flat"}>
+                    {formatSignedGrowth(row.lexileGrowth, "L")}
+                  </span>
+                )}
+                <span>{row.student.ar}</span>
+                {activeDimension === "academic" && (
+                  <span data-growth={row.arGrowth < 0 ? "down" : row.arGrowth > 0 ? "up" : "flat"}>
+                    {formatSignedDecimalGrowth(row.arGrowth)}
+                  </span>
+                )}
+              </div>
+              <div className="report-metric-group" data-dimension="reading" data-active={activeDimension === "reading"}>
+                <span>{row.readingTime.toLocaleString()} min</span>
+                {activeDimension === "reading" && (
+                  <span data-growth={row.readingTimeGrowth < 0 ? "down" : row.readingTimeGrowth > 0 ? "up" : "flat"}>
+                    {formatSignedGrowth(row.readingTimeGrowth, "min")}
+                  </span>
+                )}
+                <span>{row.readingWords.toLocaleString()}</span>
+                {activeDimension === "reading" && (
+                  <span data-growth={row.readingWordsGrowth < 0 ? "down" : row.readingWordsGrowth > 0 ? "up" : "flat"}>
+                    {formatSignedGrowth(row.readingWordsGrowth)}
+                  </span>
+                )}
+              </div>
+              <div className="report-metric-group" data-dimension="writing" data-active={activeDimension === "writing"}>
+                <span>{row.writingTime.toLocaleString()} min</span>
+                {activeDimension === "writing" && (
+                  <span data-growth={row.writingTimeGrowth < 0 ? "down" : row.writingTimeGrowth > 0 ? "up" : "flat"}>
+                    {formatSignedGrowth(row.writingTimeGrowth, "min")}
+                  </span>
+                )}
+                <span>{row.writingWords.toLocaleString()}</span>
+                {activeDimension === "writing" && (
+                  <span data-growth={row.writingWordsGrowth < 0 ? "down" : row.writingWordsGrowth > 0 ? "up" : "flat"}>
+                    {formatSignedGrowth(row.writingWordsGrowth)}
+                  </span>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="leaderboard-detail-button"
+                aria-label={`View ${row.student.name} report details`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onOpenStudent(row.student, "report");
+                }}
+              >
+                <LeaderboardArrowIcon />
+              </Button>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
 }
 
 function StudentReportPanel({ student, timeRange }: { student: StudentDetailStudent; timeRange: ReportTimeRange }) {
-  const activeData = getStudentReportData(student, timeRange);
-  const readingTime = summarizeTrend(activeData.readingTime);
-  const readingWords = summarizeTrend(activeData.readingWords);
-  const rangeLabel = reportTimeRangeOptions.find((option) => option.key === timeRange)?.detail ?? "";
+  const [activeTimeRange, setActiveTimeRange] = useState<ReportTimeRange>(timeRange);
+  const [activeDimension, setActiveDimension] = useState<ReportDimension>("academic");
+  const activeData = getStudentReportData(student, activeTimeRange);
+  const classAverageData = getReportClassAverageData(activeTimeRange);
+  const studentArData = getArTrendFromLexile(activeData.lexile, student.ar);
+  const classAverageArData = getArTrendFromLexile(classAverageData.lexile);
+  const chartGroups: Record<
+    ReportDimension,
+    Array<{
+      key: string;
+      label: string;
+      unit: string;
+      data: ReportTrendPoint[];
+      classAverageData: ReportTrendPoint[];
+    }>
+  > = {
+    academic: [
+      { key: "lexile", label: "Lexile", unit: "L", data: activeData.lexile, classAverageData: classAverageData.lexile },
+      { key: "ar", label: "AR", unit: "ATOS", data: studentArData, classAverageData: classAverageArData },
+    ],
+    reading: [
+      { key: "reading-time", label: "Reading Time", unit: "min", data: activeData.readingTime, classAverageData: classAverageData.readingTime },
+      { key: "reading-words", label: "Reading Words", unit: "words", data: activeData.readingWords, classAverageData: classAverageData.readingWords },
+    ],
+    writing: [
+      { key: "writing-time", label: "Writing Time", unit: "min", data: activeData.writingTime, classAverageData: classAverageData.writingTime },
+      { key: "writing-words", label: "Writing Words", unit: "words", data: activeData.writingWords, classAverageData: classAverageData.writingWords },
+    ],
+  };
+
+  useEffect(() => {
+    setActiveTimeRange(timeRange);
+  }, [timeRange, student.id]);
 
   return (
     <div className="student-report-panel">
-      <div className="student-report-summary" aria-label={`${student.name} reading summary`}>
-        <div>
-          <span>Reading Time</span>
-          <strong>{readingTime.total.toLocaleString()} min</strong>
-          <small>{getChangeCopy(readingTime.delta, " min", readingTime.percent)}</small>
+      <section className="student-report-chart-area" aria-label={`${student.name} report charts`}>
+        <div className="student-report-chart-toolbar">
+          <div className="student-report-range" role="tablist" aria-label="Report time range">
+            {reportTimeRangeOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                role="tab"
+                aria-selected={activeTimeRange === option.key}
+                onClick={() => setActiveTimeRange(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <div className="report-dimension-tabs" role="tablist" aria-label="Report dimension">
+            {reportDimensionOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                role="tab"
+                aria-selected={activeDimension === option.key}
+                onClick={() => setActiveDimension(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div>
-          <span>Reading Words</span>
-          <strong>{readingWords.total.toLocaleString()}</strong>
-          <small>{getChangeCopy(readingWords.delta, " words", readingWords.percent)}</small>
+        <div className="student-report-chart-grid">
+          {chartGroups[activeDimension].map((chart) => (
+            <StudentReportLineChart key={chart.key} label={chart.label} unit={chart.unit} data={chart.data} classAverageData={chart.classAverageData} />
+          ))}
         </div>
-        <em>{rangeLabel}</em>
-      </div>
-      <StudentReportLineChart label="Lexile" unit="L" data={activeData.lexile} tone="green" />
-      <StudentReportLineChart label="Reading Time" unit="min" data={activeData.readingTime} tone="amber" />
-      <StudentReportLineChart label="Reading Words" unit="words" data={activeData.readingWords} tone="blue" />
-      <StudentReportLineChart label="Writing Words" unit="words" data={activeData.writingWords} tone="purple" />
+      </section>
     </div>
   );
 }
@@ -4956,27 +5729,12 @@ function LexileArSection({
 }) {
   return (
     <section className="lexile-dashboard">
-      <div className="report-toolbar">
-        <div>
-          <h2>Report</h2>
-          <p>Class reading data and student progress for the selected range.</p>
-        </div>
-        <div className="student-report-range" role="tablist" aria-label="Report time range">
-          {reportTimeRangeOptions.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              role="tab"
-              aria-selected={timeRange === option.key}
-              onClick={() => onTimeRangeChange(option.key)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
       <div className="lexile-leaderboard-area">
-        <LexileLeaderboardCard onOpenStudent={onOpenStudent} timeRange={timeRange} />
+        <LexileLeaderboardCard
+          onOpenStudent={onOpenStudent}
+          timeRange={timeRange}
+          onTimeRangeChange={onTimeRangeChange}
+        />
       </div>
     </section>
   );
