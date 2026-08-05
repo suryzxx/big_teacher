@@ -137,11 +137,14 @@ export function getReportClassAverageData(
   const classSeries = reportLeaderboard.map((student) =>
     getStudentReportData(getStudentDetailFromReportStudent(student, completionLeaderboard), timeRange),
   );
-  const averageSeries = (metric: keyof StudentReadingReportData) =>
-    classSeries[0][metric].map((point, index) => ({
+  const averageSeries = (metric: keyof StudentReadingReportData) => {
+    const first = classSeries[0];
+    if (!first) return [];
+    return first[metric].map((point, index) => ({
       label: point.label,
       value: Math.round(classSeries.reduce((sum, series) => sum + series[metric][index].value, 0) / classSeries.length),
     }));
+  };
 
   return {
     lexile: averageSeries("lexile"),

@@ -17,8 +17,10 @@ export function ReportStudentPanel({
   student: StudentDetailStudent;
   timeRange: ReportTimeRange;
 }) {
-  const { data: completionLeaderboard = [] } = useApi(() => api.getCompletionLeaderboard());
-  const { data: reportLeaderboard = [] } = useApi(() => api.getLexileLeaderboard());
+  const { data: completionLeaderboard = [], loading: completionLoading } = useApi(() => api.getCompletionLeaderboard());
+  const { data: reportLeaderboard = [], loading: reportLoading } = useApi(() => api.getLexileLeaderboard());
+
+  if (completionLoading || reportLoading) return null;
 
   return (
     <StudentReportPanel
