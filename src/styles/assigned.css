@@ -2162,8 +2162,8 @@
 
 .student-task-select-menu button:hover,
 .student-task-select-menu button[data-selected="true"] {
-  background: color-mix(in oklch, var(--primary) 10%, var(--card));
-  color: var(--primary);
+  background: color-mix(in oklch, var(--destructive) 10%, var(--card));
+  color: var(--destructive);
 }
 
 .student-task-table {
