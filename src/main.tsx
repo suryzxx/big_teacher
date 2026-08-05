@@ -5,6 +5,7 @@ import "@fontsource-variable/noto-sans";
 import "@fontsource-variable/roboto";
 import { App } from "./App";
 import "./styles.css";
+import "./styles/assigned.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

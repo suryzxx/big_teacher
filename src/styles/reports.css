@@ -1,0 +1,1212 @@
+
+.student-dashboard {
+  display: grid;
+  gap: 18px;
+  padding-inline: 18px;
+}
+
+.student-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.student-directory-card {
+  position: relative;
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 5px 16px rgb(0 0 0 / 6%);
+}
+
+.student-directory-card > [data-slot="card-content"] {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.student-card-actions {
+  position: absolute;
+  z-index: 20;
+  top: 10px;
+  right: 10px;
+}
+
+.student-card-actions > [data-slot="button"] {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 999px;
+  color: var(--muted-foreground);
+}
+
+.student-card-actions > [data-slot="button"]:hover,
+.student-card-actions > [data-slot="button"][aria-expanded="true"] {
+  background: #f1f5f2 !important;
+  color: var(--foreground);
+}
+
+.student-card-action-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  gap: 4px;
+  min-width: 176px;
+  border: 1px solid color-mix(in oklch, var(--border) 84%, transparent);
+  border-radius: 14px;
+  padding: 6px;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 16px 34px rgb(15 23 42 / 14%);
+}
+
+.student-card-action-menu button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 10px;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 780;
+  text-align: left;
+  cursor: pointer;
+}
+
+.student-card-action-menu button:hover {
+  background: #edf7f1;
+  color: #007a55;
+}
+
+.student-card-top {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.student-photo-placeholder {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  background: var(--card);
+  color: white;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.student-photo-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-card-top h3 {
+  margin: 0 0 6px;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: 20px;
+  line-height: 1.12;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.student-card-top p {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.student-card-metrics {
+  display: grid;
+  grid-template-columns: 0.42fr 0.58fr;
+  gap: 18px;
+  padding-top: 6px;
+  text-align: center;
+}
+
+.student-card-metrics > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.student-card-metrics span,
+.student-card-metrics strong {
+  display: block;
+}
+
+.student-card-metrics span {
+  margin-bottom: 4px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.student-card-metrics strong {
+  color: var(--foreground);
+  font-size: 17px;
+  line-height: 1.1;
+  font-weight: 900;
+}
+
+.student-lexile-editor {
+  width: min(460px, 100%);
+  overflow: hidden;
+}
+
+.student-lexile-editor > [data-slot="card-content"] {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.student-lexile-editor label {
+  display: grid;
+  gap: 7px;
+}
+
+.student-lexile-editor label > span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.student-lexile-editor [data-slot="input"] {
+  height: 44px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.student-lexile-editor > [data-slot="card-footer"] {
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.myclass-workspace {
+  --myclass-panel-height: calc(100vh - 154px);
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+  padding-inline: 18px;
+}
+
+.myclass-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  position: sticky;
+  top: 96px;
+  align-self: start;
+  height: var(--myclass-panel-height);
+  transition: grid-template-rows 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.myclass-summary-grid:has(.myclass-summary-card:nth-child(1)[data-active="true"]) {
+  grid-template-rows: 1.55fr 1fr 1fr;
+}
+
+.myclass-summary-grid:has(.myclass-summary-card:nth-child(2)[data-active="true"]) {
+  grid-template-rows: 1fr 1.55fr 1fr;
+}
+
+.myclass-summary-grid:has(.myclass-summary-card:nth-child(3)[data-active="true"]) {
+  grid-template-rows: 1fr 1fr 1.55fr;
+}
+
+.myclass-summary-card {
+  position: relative;
+  overflow: visible;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: var(--radius-2xl);
+  padding: 18px;
+  border-color: var(--summary-border) !important;
+  background: transparent !important;
+  text-align: center;
+  white-space: normal;
+  box-shadow: 0 6px 20px rgb(15 23 42 / 5%);
+  transition:
+    background 260ms ease,
+    border-color 260ms ease,
+    color 260ms ease,
+    gap 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 320ms ease,
+    transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.myclass-summary-card::before,
+.myclass-summary-card::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.myclass-summary-card::before {
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--summary-bg);
+  transition: background 260ms ease;
+}
+
+.myclass-summary-card::after {
+  z-index: -1;
+  opacity: 0;
+  top: 50%;
+  right: -12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: transparent;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.myclass-summary-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.myclass-summary-card[data-tone="green"] {
+  --summary-bg: #eafbf3;
+  --summary-border: #d8f3e7;
+  --summary-accent: #10bd83;
+  --summary-icon-bg: #10bd83;
+  --summary-active: #10bd83;
+}
+
+.myclass-summary-card[data-tone="amber"] {
+  --summary-bg: #fff9e9;
+  --summary-border: #f4ecd2;
+  --summary-accent: #f59a08;
+  --summary-icon-bg: #f59a08;
+  --summary-active: #f59a08;
+}
+
+.myclass-summary-card[data-tone="blue"] {
+  --summary-bg: #edf8ff;
+  --summary-border: #dceff9;
+  --summary-accent: #0ca3e7;
+  --summary-icon-bg: #0ca3e7;
+  --summary-active: #0ca3e7;
+}
+
+.myclass-summary-card[data-tone="pink"] {
+  --summary-bg: #fff0f1;
+  --summary-border: #f4dddd;
+  --summary-accent: #ff3863;
+  --summary-icon-bg: #ff3863;
+  --summary-active: #ff3863;
+}
+
+.myclass-summary-card[data-active="true"] {
+  grid-template-columns: 1fr;
+  gap: 14px;
+  border-color: var(--summary-active) !important;
+  background: transparent !important;
+  color: var(--primary-foreground);
+  box-shadow:
+    0 0 0 2px color-mix(in oklch, var(--summary-active) 28%, transparent),
+    0 16px 30px color-mix(in oklch, var(--summary-active) 20%, transparent);
+}
+
+.myclass-summary-card[data-active="true"]::before {
+  background:
+    radial-gradient(circle at calc(100% - 18px) 20px, rgb(255 255 255 / 23%) 0 112px, transparent 113px),
+    radial-gradient(circle at 18px calc(100% - 8px), rgb(255 255 255 / 20%) 0 84px, transparent 85px),
+    var(--summary-active);
+}
+
+.myclass-summary-card[data-active="true"]::after {
+  opacity: 1;
+  background: var(--summary-active);
+}
+
+.myclass-summary-icon {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 24px;
+  background: transparent !important;
+  transition:
+    width 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.myclass-summary-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px rgb(15 23 42 / 16%));
+}
+
+.myclass-summary-card[data-active="true"] .myclass-summary-icon,
+.myclass-summary-card[data-active="true"][data-tone] .myclass-summary-icon {
+  width: 88px;
+  height: 88px;
+  background: transparent !important;
+  transform: translateY(-2px);
+}
+
+.myclass-summary-copy {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  min-width: 0;
+  width: 100%;
+}
+
+.myclass-summary-copy > span {
+  color: var(--foreground);
+  font-size: 16px;
+  font-weight: 900;
+  transition: color 260ms ease;
+}
+
+.myclass-summary-copy strong {
+  color: var(--foreground);
+  font-size: 25px;
+  line-height: 1;
+  font-weight: 950;
+  transition:
+    color 260ms ease,
+    font-size 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.myclass-summary-copy small {
+  justify-content: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 760;
+  transition: color 260ms ease;
+}
+
+.myclass-summary-copy em {
+  color: var(--foreground);
+  font-style: normal;
+  font-weight: 850;
+  transition: color 260ms ease;
+}
+
+.myclass-summary-card[data-active="true"] .myclass-summary-copy > span,
+.myclass-summary-card[data-active="true"] .myclass-summary-copy strong,
+.myclass-summary-card[data-active="true"] .myclass-summary-copy small,
+.myclass-summary-card[data-active="true"] .myclass-summary-copy em {
+  color: var(--primary-foreground);
+}
+
+.myclass-summary-card[data-active="true"] .myclass-summary-copy strong {
+  font-size: 30px;
+}
+
+.myclass-summary-check {
+  align-self: start;
+  color: var(--primary-foreground);
+}
+
+.myclass-summary-arrow {
+  color: var(--muted-foreground);
+  transition: color 260ms ease;
+}
+
+.myclass-summary-card[data-active="true"] .myclass-summary-arrow {
+  color: var(--primary-foreground);
+}
+
+.student-detail-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1180px, 100%);
+  height: min(800px, calc(100vh - 56px));
+  overflow: hidden;
+}
+
+.student-detail-dialog > [data-slot="card-header"] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 76px;
+  padding-right: 64px;
+}
+
+.student-detail-tabs {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  border: 1px solid color-mix(in oklch, var(--border) 86%, transparent);
+  border-radius: 999px;
+  padding: 4px;
+  background: #ffffff;
+  transform: translate(-50%, -50%);
+}
+
+.student-detail-dialog > [data-slot="card-header"] > [data-slot="card-action"] {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+}
+
+.student-detail-dialog > [data-slot="card-header"] > [data-slot="card-action"] [data-slot="button"] {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+}
+
+.student-detail-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 104px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.student-detail-tabs button img {
+  width: 21px;
+  height: 21px;
+  object-fit: contain;
+}
+
+.student-detail-tabs button:nth-child(1) {
+  background: #ffffff;
+  color: #8a5a00;
+}
+
+.student-detail-tabs button:nth-child(1)[aria-selected="true"] {
+  background: #fff4cf;
+  color: #8a5a00;
+}
+
+.student-detail-tabs button:nth-child(2) {
+  background: #ffffff;
+  color: #1d5f99;
+}
+
+.student-detail-tabs button:nth-child(2)[aria-selected="true"] {
+  background: #e8f3ff;
+  color: #1d5f99;
+}
+
+.student-detail-tabs button[aria-selected="true"] {
+  box-shadow: 0 2px 8px rgb(15 23 42 / 8%);
+}
+
+.student-detail-dialog-content {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.lexile-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "leaderboard";
+  gap: 0;
+  width: 100%;
+  height: min(800px, calc(100vh - 177px));
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.myclass-workspace:has(.myclass-summary-card:nth-child(3)[data-active="true"]) {
+  overflow: hidden;
+}
+
+.myclass-workspace:has(.myclass-summary-card:nth-child(3)[data-active="true"]) .myclass-summary-grid {
+  height: min(800px, calc(100vh - 177px));
+}
+
+.lexile-leaderboard-area {
+  display: grid;
+  grid-area: leaderboard;
+  min-width: 0;
+  min-height: 0;
+}
+
+
+.lexile-leaderboard-card {
+  box-shadow: 0 6px 20px rgb(15 23 42 / 5%);
+}
+
+.lexile-leaderboard-card [data-slot="card-title"] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.lexile-leaderboard-card [data-slot="card-title"] svg {
+  color: var(--primary);
+}
+
+
+
+.lexile-leaderboard-card,
+.lexile-leaderboard-card > [data-slot="card-content"] {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.lexile-leaderboard-card > [data-slot="card-header"] {
+  min-height: 76px;
+}
+
+
+.lexile-leaderboard-card > [data-slot="card-content"] {
+  display: block;
+}
+
+
+.lexile-leaderboard-head,
+.lexile-leaderboard-row {
+  display: grid;
+  grid-template-columns:
+    42px 190px
+    var(--academic-columns, 236px)
+    var(--reading-columns, 236px)
+    var(--writing-columns, 236px)
+    32px;
+  align-items: center;
+  gap: 12px;
+  min-width: 100%;
+}
+
+.lexile-leaderboard-head[data-active-dimension="academic"],
+.lexile-leaderboard-row[data-active-dimension="academic"] {
+  --academic-columns: 472px;
+}
+
+.lexile-leaderboard-head[data-active-dimension="reading"],
+.lexile-leaderboard-row[data-active-dimension="reading"] {
+  --reading-columns: 472px;
+}
+
+.lexile-leaderboard-head[data-active-dimension="writing"],
+.lexile-leaderboard-row[data-active-dimension="writing"] {
+  --writing-columns: 472px;
+}
+
+.lexile-leaderboard-head {
+  margin-bottom: 12px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.lexile-leaderboard-row {
+  position: relative;
+  min-height: 58px;
+  border-top: 0;
+  border-radius: 0;
+  padding-inline: 8px;
+  color: var(--foreground);
+  font-size: 14px;
+  font-weight: 820;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.lexile-leaderboard-row::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+  pointer-events: none;
+}
+
+.lexile-leaderboard-row:hover,
+.lexile-leaderboard-row:focus-visible {
+  background: #eff6ff;
+  box-shadow: none;
+  outline: none;
+}
+
+.lexile-leaderboard-card [data-slot="card-content"] {
+  overflow: auto;
+  padding-bottom: 18px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.lexile-leaderboard-card [data-slot="card-content"]::-webkit-scrollbar {
+  display: none;
+}
+
+.lexile-leaderboard-row em {
+  color: var(--primary);
+  font-style: normal;
+  font-weight: 950;
+}
+
+.report-leaderboard-table {
+  position: relative;
+  min-width: 1256px;
+}
+
+.report-leaderboard-table::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 6px;
+  width: 472px;
+  border-radius: 16px;
+  background: #e8f3ff;
+  pointer-events: none;
+}
+
+.report-leaderboard-table[data-active-dimension="academic"]::before {
+  left: 256px;
+}
+
+.report-leaderboard-table[data-active-dimension="reading"]::before {
+  left: 504px;
+}
+
+.report-leaderboard-table[data-active-dimension="writing"]::before {
+  left: 752px;
+}
+
+.report-leaderboard-table .lexile-leaderboard-head,
+.report-leaderboard-table .lexile-leaderboard-row {
+  position: relative;
+  z-index: 1;
+}
+
+.report-leaderboard-card > [data-slot="card-header"] {
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+  justify-items: end;
+  min-height: 54px;
+}
+
+.report-leaderboard-card {
+  box-shadow: none !important;
+}
+
+.report-leaderboard-card > [data-slot="card-header"] [data-slot="card-description"] {
+  grid-column: 1 / -1;
+}
+
+.report-leaderboard-card [data-slot="card-description"] {
+  margin-top: 4px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.report-leaderboard-card [data-slot="card-action"] {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.report-leaderboard-card .student-report-range {
+  grid-column: auto;
+  justify-self: auto;
+}
+
+.report-dimension-tabs {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  border: 1px solid color-mix(in oklch, var(--border) 84%, transparent);
+  border-radius: 999px;
+  padding: 3px;
+  background: #ffffff;
+}
+
+.report-dimension-tabs button {
+  min-width: 76px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.report-dimension-tabs button[aria-selected="true"] {
+  background: #e8f3ff;
+  color: #1d5f99;
+}
+
+.report-leaderboard-card .lexile-leaderboard-row > span,
+.report-sort-button span,
+.report-metric-group span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-leaderboard-card .leaderboard-student strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-sort-button {
+  display: inline-grid;
+  grid-template-columns: minmax(0, auto) 18px;
+  align-items: center;
+  justify-content: start;
+  gap: 5px;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  font: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.report-sort-button svg {
+  width: 16px;
+  height: 16px;
+  color: currentColor;
+}
+
+.report-sort-button[data-active="true"] {
+  color: #1d5f99;
+}
+
+.report-sort-button[data-direction="desc"] svg {
+  transform: rotate(180deg);
+}
+
+.report-sort-button:focus-visible {
+  border-radius: 6px;
+  outline: 2px solid color-mix(in oklch, #1d5f99 34%, transparent);
+  outline-offset: 2px;
+}
+
+.report-metric-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 42px;
+  border-radius: 14px;
+  padding: 0 10px;
+}
+
+.report-metric-group[data-active="true"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  color: var(--foreground);
+}
+
+.report-metric-group [data-growth="up"] {
+  color: #16a34a;
+}
+
+.report-metric-group [data-growth="down"] {
+  color: #ef4444;
+}
+
+.lexile-leaderboard-head .report-metric-group[data-active="true"] {
+  min-height: 36px;
+  font-weight: 900;
+}
+
+.lexile-leaderboard-row .report-metric-group[data-active="true"] {
+  font-weight: 950;
+}
+
+
+.student-report-panel {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.student-report-chart-area {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklch, var(--border) 78%, transparent);
+  border-radius: 16px;
+  background: #fff;
+  padding: 16px;
+}
+
+.student-report-chart-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.student-report-range {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1fr);
+  justify-self: start;
+  gap: 4px;
+  border: 1px solid color-mix(in oklch, var(--border) 84%, transparent);
+  border-radius: 999px;
+  padding: 3px;
+  background: #ffffff;
+}
+
+.student-report-range button {
+  min-width: 76px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.student-report-range button[aria-selected="true"] {
+  background: #e8f3ff;
+  color: #1d5f99;
+}
+
+.student-report-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.student-report-chart {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid color-mix(in oklch, var(--border) 82%, transparent);
+  border-radius: 16px;
+  padding: 14px;
+  background: rgb(255 255 255 / 72%);
+}
+
+.student-report-chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  color: var(--foreground);
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.student-report-chart-head span,
+.student-report-chart-head em {
+  font-style: normal;
+  font-weight: 400;
+}
+
+.student-report-chart-head em {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+
+.student-report-chart svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.student-report-grid-line {
+  stroke: color-mix(in oklch, var(--border) 86%, transparent);
+  stroke-width: 1;
+}
+
+.student-report-tick,
+.student-report-label,
+.student-report-value {
+  fill: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.student-report-value {
+  fill: var(--foreground);
+}
+
+.student-report-line {
+  fill: none;
+  stroke: #1877c9;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.student-report-class-line {
+  stroke: #a3a3a3;
+  stroke-width: 2;
+}
+
+.student-report-point {
+  fill: #1877c9;
+  stroke: white;
+  stroke-width: 2;
+}
+
+.student-report-chart-legend {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  min-width: 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.student-report-chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.student-report-chart-legend span::before {
+  content: "";
+  width: 22px;
+  height: 3px;
+  border-radius: 999px;
+  background: #1877c9;
+}
+
+.student-report-chart-legend [data-line="class"]::before {
+  background: #a3a3a3;
+}
+
+.myclass-workspace :where(
+  h1,
+h2,
+h3,
+p,
+span,
+strong,
+small,
+em,
+button,
+label,
+[data-slot="card-title"],
+[data-slot="card-description"],
+[data-slot="button"],
+[data-slot="select-trigger"],
+[data-slot="badge"]
+) {
+  font-weight: 400 !important;
+}
+
+.myclass-summary-copy strong {
+  font-family: "Nunito Variable", var(--font-sans);
+  font-weight: 500 !important;
+}
+
+@media (max-width: 1500px) {
+  .student-directory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .lexile-dashboard {
+    grid-template-areas:
+      "toolbar"
+      "leaderboard";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lexile-leaderboard-card {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 1180px) {
+  .student-directory-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .myclass-workspace {
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .myclass-summary-card {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    min-height: 0;
+    height: 100%;
+    padding: 14px;
+  }
+
+  .myclass-summary-card[data-active="true"] {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .myclass-summary-icon {
+    width: 62px;
+    height: 62px;
+  }
+
+  .myclass-summary-card[data-active="true"] .myclass-summary-icon,
+  .myclass-summary-card[data-active="true"][data-tone] .myclass-summary-icon {
+    width: 74px;
+    height: 74px;
+  }
+
+  .myclass-summary-copy strong {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 760px) {
+  .myclass-summary-grid,
+  .student-directory-grid,
+  .lexile-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .lexile-dashboard {
+    grid-template-areas: "leaderboard";
+    height: auto;
+    overflow: visible;
+  }
+
+  .report-leaderboard-card [data-slot="card-action"] {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .report-leaderboard-card .student-report-range,
+  .report-dimension-tabs {
+    width: 100%;
+  }
+
+  .myclass-workspace {
+    grid-template-columns: 1fr;
+    padding-inline: 0;
+  }
+
+  .myclass-summary-grid {
+    position: static;
+    height: auto;
+    grid-template-rows: none;
+  }
+
+  .student-lexile-editor > [data-slot="card-content"] {
+    grid-template-columns: 1fr;
+  }
+
+  .myclass-summary-card {
+    grid-template-columns: 76px minmax(0, 1fr);
+    height: auto;
+    min-height: 128px;
+  }
+
+  .lexile-leaderboard-head {
+    display: none;
+  }
+
+  .lexile-leaderboard-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .lexile-leaderboard-row > span,
+  .lexile-leaderboard-row > em {
+    grid-column: 2;
+  }
+
+  .student-card-metrics {
+    padding-left: 0;
+  }
+
+  .student-overview-card > [data-slot="card-content"] {
+    grid-template-columns: 70px minmax(0, 1fr);
+  }
+
+  .student-overview-mark {
+    width: 64px;
+    height: 64px;
+  }
+
+  .student-report-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .student-report-chart-toolbar,
+  .student-report-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-report-chart-toolbar {
+    display: grid;
+  }
+
+  .student-report-chart-toolbar .student-report-range,
+  .student-report-chart-toolbar .report-dimension-tabs {
+    width: 100%;
+  }
+
+  .student-detail-dialog > [data-slot="card-header"] {
+    align-items: start;
+    min-height: 118px;
+    padding-right: 56px;
+  }
+
+  .student-detail-tabs {
+    top: auto;
+    bottom: 18px;
+  }
+}

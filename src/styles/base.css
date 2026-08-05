@@ -1,0 +1,361 @@
+@layer base {
+  .theme {
+    --font-heading: var(--font-sans);
+    --font-sans: "Roboto Variable", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  :root {
+    --background: oklch(0.988 0.003 106.5);
+    --foreground: oklch(0.153 0.006 107.1);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.153 0.006 107.1);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.153 0.006 107.1);
+    --primary: oklch(0.508 0.118 165.612);
+    --primary-foreground: oklch(0.979 0.021 166.113);
+    --secondary: oklch(0.966 0.005 106.5);
+    --secondary-foreground: oklch(0.228 0.013 107.4);
+    --muted: oklch(0.966 0.005 106.5);
+    --muted-foreground: oklch(0.58 0.031 107.3);
+    --accent: oklch(0.897 0.196 126.665);
+    --accent-foreground: oklch(0.262 0.051 172.552);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.93 0.007 106.5);
+    --input: oklch(0.93 0.007 106.5);
+    --ring: oklch(0.737 0.021 106.9);
+    --chart-1: oklch(0.897 0.196 126.665);
+    --chart-2: oklch(0.768 0.233 130.85);
+    --chart-3: oklch(0.648 0.2 131.684);
+    --chart-4: oklch(0.532 0.157 131.589);
+    --chart-5: oklch(0.453 0.124 130.933);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.988 0.003 106.5);
+    --sidebar-foreground: oklch(0.153 0.006 107.1);
+    --sidebar-primary: oklch(0.596 0.145 163.225);
+    --sidebar-primary-foreground: oklch(0.979 0.021 166.113);
+    --sidebar-accent: oklch(0.966 0.005 106.5);
+    --sidebar-accent-foreground: oklch(0.228 0.013 107.4);
+    --sidebar-border: oklch(0.93 0.007 106.5);
+    --sidebar-ring: oklch(0.737 0.021 106.9);
+  }
+
+  .dark {
+    --background: oklch(0.153 0.006 107.1);
+    --foreground: oklch(0.988 0.003 106.5);
+    --card: oklch(0.228 0.013 107.4);
+    --card-foreground: oklch(0.988 0.003 106.5);
+    --popover: oklch(0.228 0.013 107.4);
+    --popover-foreground: oklch(0.988 0.003 106.5);
+    --primary: oklch(0.696 0.17 162.48);
+    --primary-foreground: oklch(0.262 0.051 172.552);
+    --secondary: oklch(0.286 0.016 107.4);
+    --secondary-foreground: oklch(0.988 0.003 106.5);
+    --muted: oklch(0.286 0.016 107.4);
+    --muted-foreground: oklch(0.737 0.021 106.9);
+    --accent: oklch(0.897 0.196 126.665);
+    --accent-foreground: oklch(0.262 0.051 172.552);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.58 0.031 107.3);
+    --chart-1: oklch(0.897 0.196 126.665);
+    --chart-2: oklch(0.696 0.17 162.48);
+    --chart-3: oklch(0.769 0.188 70.08);
+    --chart-4: oklch(0.648 0.2 131.684);
+    --chart-5: oklch(0.453 0.124 130.933);
+    --sidebar: oklch(0.228 0.013 107.4);
+    --sidebar-foreground: oklch(0.988 0.003 106.5);
+    --sidebar-primary: oklch(0.696 0.17 162.48);
+    --sidebar-primary-foreground: oklch(0.262 0.051 172.552);
+    --sidebar-accent: oklch(0.286 0.016 107.4);
+    --sidebar-accent-foreground: oklch(0.988 0.003 106.5);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.58 0.031 107.3);
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  html {
+    @apply font-sans;
+  }
+}
+
+.app-frame {
+  display: grid;
+  place-items: start center;
+  min-height: 100vh;
+  padding: 16px;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.showcase-canvas {
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - 32px);
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.app-switcher {
+  position: sticky;
+  z-index: 5;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+  min-height: 76px;
+  padding: 18px 24px 0;
+  background: linear-gradient(180deg, color-mix(in oklch, var(--background) 92%, transparent) 0%, transparent 100%);
+  backdrop-filter: blur(14px);
+}
+
+.app-switcher > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.app-switcher strong {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.app-switcher span {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.app-tabs {
+  position: absolute;
+  left: 50%;
+  display: inline-flex;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 10%);
+  transform: translateX(-50%);
+}
+
+.app-tabs [data-slot="button"] {
+  min-width: 140px;
+  height: 48px;
+  gap: 8px;
+  border-radius: 999px;
+  font-family: "Nunito Variable", var(--font-sans);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.teacher-profile-menu {
+  position: relative;
+  margin-left: auto;
+  width: fit-content;
+  min-width: 0;
+}
+
+.teacher-profile-anchor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  width: auto;
+}
+
+.teacher-avatar-wrap {
+  position: relative;
+  display: block;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  overflow: visible;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 8%);
+}
+
+.teacher-avatar-wrap img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.teacher-logout-button {
+  position: absolute;
+  z-index: 4;
+  right: -4px;
+  bottom: -4px;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 96%);
+  color: var(--foreground);
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 8px 18px rgb(15 23 42 / 16%);
+  transform: translateY(3px) scale(0.9);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    background-color 160ms ease;
+}
+
+.teacher-avatar-wrap:hover .teacher-logout-button,
+.teacher-logout-button:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.teacher-logout-button:hover {
+  background: #f4f7f5 !important;
+}
+
+.teacher-profile-copy {
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+  min-width: 0;
+  color: var(--foreground);
+  line-height: 1;
+}
+
+.app-switcher .teacher-profile-copy > strong {
+  max-width: 210px;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: 15px;
+  line-height: 1.12;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teacher-class-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 220px;
+  min-height: 20px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+
+.app-switcher .teacher-class-trigger span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teacher-class-trigger svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.teacher-profile-menu[data-open="true"] .teacher-class-trigger svg {
+  transform: rotate(180deg);
+}
+
+.teacher-class-menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 10px);
+  right: 0;
+  display: grid;
+  gap: 4px;
+  width: 238px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 18px 38px rgb(15 23 42 / 14%);
+  backdrop-filter: blur(12px);
+}
+
+.teacher-class-option {
+  min-height: 38px;
+  border: 0;
+  border-radius: 13px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.teacher-class-option:hover,
+.teacher-class-option[data-active="true"] {
+  background: #eafbf3;
+  color: var(--primary);
+}
+
+.workspace {
+  padding: 26px 18px 32px;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 7px;
+  font-size: clamp(38px, 4vw, 58px);
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+@media (max-width: 760px) {
+  .app-frame {
+    padding: 12px;
+  }
+
+  .workspace {
+    padding: 22px 16px 28px;
+  }
+
+  .app-switcher {
+    display: grid;
+    gap: 14px;
+    padding: 16px 16px 0;
+  }
+
+  .app-tabs {
+    position: static;
+    justify-self: center;
+    transform: none;
+  }
+}
