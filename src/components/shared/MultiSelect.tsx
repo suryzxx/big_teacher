@@ -1,6 +1,7 @@
-import { useRef } from "react";
-import { CheckCircle2, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { CheckCircle2, Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuItem } from "@/components/shared/DropdownMenu";
 import { removeMultiSelectOption, toggleMultiSelectOption } from "@/lib/multiSelectOptions";
 import { useClickOutside } from "@/lib/useClickOutside";
 
@@ -13,6 +14,8 @@ export function MultiSelect({
   onChange,
   helper,
   required = true,
+  allOption = "All",
+  searchable = true,
 }: {
   label: string;
   options: string[];
@@ -22,17 +25,35 @@ export function MultiSelect({
   onChange: (values: string[]) => void;
   helper?: string;
   required?: boolean;
+  /** 提供"全部"选项文案；传 undefined 表示不启用该语义，允许清空选择。 */
+  allOption?: string;
+  /** 是否在菜单顶部提供关键词搜索过滤。 */
+  searchable?: boolean;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const [search, setSearch] = useState("");
 
   useClickOutside(rootRef, open, () => onOpenChange(false));
 
+  function toggleOpen(nextOpen: boolean) {
+    if (nextOpen) setSearch("");
+    onOpenChange(nextOpen);
+  }
+
   function selectOption(option: string) {
-    onChange(toggleMultiSelectOption(values, option, "All"));
+    if (allOption === undefined) {
+      onChange(values.includes(option) ? values.filter((value) => value !== option) : [...values, option]);
+      return;
+    }
+    onChange(toggleMultiSelectOption(values, option, allOption));
   }
 
   function removeOption(option: string) {
-    onChange(removeMultiSelectOption(values, option, "All"));
+    if (allOption === undefined) {
+      onChange(values.filter((value) => value !== option));
+      return;
+    }
+    onChange(removeMultiSelectOption(values, option, allOption));
   }
 
   return (
@@ -43,7 +64,7 @@ export function MultiSelect({
         aria-expanded={open}
         onClick={(event) => {
           event.stopPropagation();
-          onOpenChange(!open);
+          toggleOpen(!open);
         }}
       >
         {required && <span className="assign-required">*</span>}
@@ -56,13 +77,13 @@ export function MultiSelect({
         className="assign-multi-value"
         onClick={(event) => {
           event.stopPropagation();
-          onOpenChange(!open);
+          toggleOpen(!open);
         }}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             event.stopPropagation();
-            onOpenChange(!open);
+            toggleOpen(!open);
           }
         }}
       >
@@ -70,7 +91,7 @@ export function MultiSelect({
           values.map((value) => (
             <Badge key={value} variant="secondary" className="assign-multi-badge" onClick={(event) => event.stopPropagation()}>
               <span>{value}</span>
-              {value !== "All" && (
+              {allOption !== undefined && value === allOption ? null : (
                 <span
                   role="button"
                   tabIndex={0}
@@ -98,25 +119,38 @@ export function MultiSelect({
         )}
       </div>
       {open && (
-        <div className="assign-multi-menu">
-          {options.map((option) => {
-            const selected = values.includes(option);
-            return (
-              <button
-                key={option}
-                type="button"
-                data-selected={selected}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  selectOption(option);
-                }}
-              >
-                <span>{option}</span>
-                {selected && <CheckCircle2 size={16} />}
-              </button>
-            );
-          })}
-        </div>
+        <DropdownMenu
+          width="full"
+          scroll
+          header={
+            searchable ? (
+              <label className="multi-select-search">
+                <Search size={14} />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="搜索"
+                />
+              </label>
+            ) : undefined
+          }
+        >
+          {options
+            .filter((option) => option.toLowerCase().includes(search.trim().toLowerCase()))
+            .map((option) => {
+              const selected = values.includes(option);
+              return (
+                <DropdownMenuItem key={option} selected={selected} onSelect={() => selectOption(option)}>
+                  <span>{option}</span>
+                  {selected && <CheckCircle2 size={16} />}
+                </DropdownMenuItem>
+              );
+            })}
+          {search.trim() !== "" && !options.some((option) => option.toLowerCase().includes(search.trim().toLowerCase())) && (
+            <div className="multi-select-empty">无匹配选项</div>
+          )}
+        </DropdownMenu>
       )}
     </div>
   );

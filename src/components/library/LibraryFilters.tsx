@@ -18,7 +18,6 @@ import {
   WORDS_STEP,
   formatDuration,
   formatWords,
-  libraryGenreOptions,
   typeOptions,
 } from "./libraryUtils";
 
@@ -102,7 +101,9 @@ export function LibraryFilters({
   minDuration,
   maxDuration,
   onQueryChange,
+  onSearchSubmit,
   onTypeChange,
+  genreOptions,
   onGenresChange,
   onTopicsChange,
   onGenreOpenChange,
@@ -128,7 +129,9 @@ export function LibraryFilters({
   minDuration: number;
   maxDuration: number;
   onQueryChange: (query: string) => void;
+  onSearchSubmit: () => void;
   onTypeChange: (type: ResourceType | null) => void;
+  genreOptions: string[];
   onGenresChange: (genres: string[]) => void;
   onTopicsChange: (topics: string[]) => void;
   onGenreOpenChange: (open: boolean) => void;
@@ -142,15 +145,24 @@ export function LibraryFilters({
 }) {
   return (
     <aside className="library-filter-sidebar" aria-label="Library filters">
-      <label className="search-filter">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      <form
+        className="search-filter"
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSearchSubmit();
+        }}
+      >
+        <button type="submit" className="search-filter-icon" aria-label="Search">
+          <Search className="size-4" />
+        </button>
         <Input
           className="pl-9"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Search resources"
         />
-      </label>
+      </form>
 
       <div className="type-card-grid" aria-label="Type filter">
         {typeOptions.map((item) => (
@@ -213,34 +225,36 @@ export function LibraryFilters({
         </Card>
       )}
 
-      <Card className="library-filter-select-card">
-        <CardContent className="library-filter-select-stack">
-          <MultiSelect
-            label="Genre"
-            options={libraryGenreOptions}
-            values={selectedGenres}
-            open={genreOpen}
-            required={false}
-            onOpenChange={(nextOpen) => {
-              onGenreOpenChange(nextOpen);
-              if (nextOpen) onTopicOpenChange(false);
-            }}
-            onChange={onGenresChange}
-          />
-          <MultiSelect
-            label="Topic"
-            options={topicOptions}
-            values={selectedTopics}
-            open={topicOpen}
-            required={false}
-            onOpenChange={(nextOpen) => {
-              onTopicOpenChange(nextOpen);
-              if (nextOpen) onGenreOpenChange(false);
-            }}
-            onChange={onTopicsChange}
-          />
-        </CardContent>
-      </Card>
+      {type !== "Writing" && (
+        <Card className="library-filter-select-card">
+          <CardContent className="library-filter-select-stack">
+            <MultiSelect
+              label="Genre"
+              options={genreOptions}
+              values={selectedGenres}
+              open={genreOpen}
+              required={false}
+              onOpenChange={(nextOpen) => {
+                onGenreOpenChange(nextOpen);
+                if (nextOpen) onTopicOpenChange(false);
+              }}
+              onChange={onGenresChange}
+            />
+            <MultiSelect
+              label="Topic"
+              options={topicOptions}
+              values={selectedTopics}
+              open={topicOpen}
+              required={false}
+              onOpenChange={(nextOpen) => {
+                onTopicOpenChange(nextOpen);
+                if (nextOpen) onGenreOpenChange(false);
+              }}
+              onChange={onTopicsChange}
+            />
+          </CardContent>
+        </Card>
+      )}
     </aside>
   );
 }

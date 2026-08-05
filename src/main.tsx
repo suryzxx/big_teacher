@@ -6,6 +6,7 @@ import "@fontsource-variable/roboto";
 import { App } from "./App";
 import "./styles.css";
 import "./styles/assigned.css";
+import "./styles/login.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

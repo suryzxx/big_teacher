@@ -1,6 +1,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuItem } from "@/components/shared/DropdownMenu";
 import { useClickOutside } from "@/lib/useClickOutside";
 import {
   assignedTaskStatusFilterOptions,
@@ -66,21 +67,20 @@ export function StudentTaskDropdown<Option extends StudentTaskDropdownOption>({
         <TaskFilterChevronIcon />
       </button>
       {open && (
-        <span className="student-task-select-menu">
+        <DropdownMenu width="full" scroll>
           {options.map((option) => (
-            <button
+            <DropdownMenuItem
               key={option}
-              type="button"
-              data-selected={option === value}
-              onClick={() => {
+              selected={option === value}
+              onSelect={() => {
                 onChange(option);
                 setOpen(false);
               }}
             >
               {option}
-            </button>
+            </DropdownMenuItem>
           ))}
-        </span>
+        </DropdownMenu>
       )}
     </span>
   );

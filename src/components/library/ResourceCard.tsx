@@ -45,13 +45,19 @@ export function ResourceCard({
   resource,
   onAssign,
   onEdit,
+  onPreview,
 }: {
   resource: Resource;
   onAssign: (resource: Resource) => void;
   onEdit?: (resource: Resource) => void;
+  onPreview?: (resource: Resource) => void;
 }) {
   const isTextResource = "wordCount" in resource;
   const detail = isTextResource ? `${resource.wordCount.toLocaleString()} words` : resource.duration;
+  const badges =
+    resource.type === "Writing"
+      ? [resource.grades ? `grades: ${resource.grades}` : null, resource.type].filter(Boolean)
+      : [`${resource.lexile}L`, detail, resource.type];
 
   return (
     <Card className="resource-card gap-0 overflow-hidden py-0">
@@ -60,20 +66,29 @@ export function ResourceCard({
         <Badge variant="secondary" className="resource-genre-badge">
           {resource.genre}
         </Badge>
+        {resource.topic && (
+          <Badge variant="secondary" className="resource-topic-badge">
+            {resource.topic}
+          </Badge>
+        )}
       </div>
       <div className="resource-card-body">
         <CardHeader className="resource-card-header">
           <CardTitle className="resource-card-title">{resource.title}</CardTitle>
         </CardHeader>
         <CardContent className="resource-card-meta">
-          {[`${resource.lexile}L`, detail, resource.type].map((label) => (
+          {badges.map((label) => (
             <Badge key={label} variant="secondary" className="resource-card-badge">
               {label}
             </Badge>
           ))}
         </CardContent>
         <CardFooter className="resource-card-actions">
-          <button type="button" className="resource-action resource-action-preview" onClick={onEdit ? () => onEdit(resource) : undefined}>
+          <button
+            type="button"
+            className="resource-action resource-action-preview"
+            onClick={onPreview ? () => onPreview(resource) : onEdit ? () => onEdit(resource) : undefined}
+          >
             <PreviewIcon />
             <span>{onEdit ? "Edit" : "Preview"}</span>
           </button>

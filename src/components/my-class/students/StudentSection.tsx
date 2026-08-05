@@ -3,7 +3,8 @@ import { MoreHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { convertArToLexile, convertLexileToAr, normalizeArInput, normalizeLexileInput } from "@/lib/lexile";
+import { convertArToLexile, normalizeArInput } from "@/lib/lexile";
+import { DropdownMenu, DropdownMenuItem } from "@/components/shared/DropdownMenu";
 import { useClickOutside } from "@/lib/useClickOutside";
 import type { StudentDirectoryEntry } from "@/types";
 
@@ -33,15 +34,6 @@ function StudentDirectoryCard({
     }
   }
 
-  function changeLexile(nextLexile: string) {
-    setLexileValue(nextLexile);
-    if (nextLexile.trim() === "") return;
-
-    const normalizedLexile = normalizeLexileInput(nextLexile);
-    if (normalizedLexile === null) return;
-    setArValue(String(convertLexileToAr(normalizedLexile)));
-  }
-
   function changeAr(nextAr: string) {
     setArValue(nextAr);
     if (nextAr.trim() === "") return;
@@ -51,19 +43,17 @@ function StudentDirectoryCard({
     setLexileValue(String(convertArToLexile(normalizedAr)));
   }
 
-  function saveLexileAr() {
-    const normalizedLexile = normalizeLexileInput(lexileValue);
+  function saveAr() {
     const normalizedAr = normalizeArInput(arValue);
 
-    if (normalizedLexile === null && normalizedAr === null) {
+    if (normalizedAr === null) {
       setLexileValue(String(student.lexile));
       setArValue(String(student.ar));
       return;
     }
 
-    const nextLexile = normalizedLexile ?? convertArToLexile(normalizedAr ?? student.ar);
-    const nextAr = normalizedAr ?? convertLexileToAr(nextLexile);
-    onUpdate(student.id, { lexile: nextLexile, ar: nextAr });
+    const nextAr = normalizedAr;
+    onUpdate(student.id, { lexile: convertArToLexile(nextAr), ar: nextAr });
     setEditOpen(false);
   }
 
@@ -83,26 +73,24 @@ function StudentDirectoryCard({
               <MoreHorizontal size={18} />
             </Button>
             {menuOpen && (
-              <div className="student-card-action-menu">
-                <button
-                  type="button"
-                  onClick={() => {
+              <DropdownMenu align="right">
+                <DropdownMenuItem
+                  onSelect={() => {
                     setMenuOpen(false);
                     setEditOpen(true);
                   }}
                 >
-                  Modify Lexile/AR
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
+                  Modify AR
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
                     setMenuOpen(false);
                     onViewDetail(student);
                   }}
                 >
                   View Detail
-                </button>
-              </div>
+                </DropdownMenuItem>
+              </DropdownMenu>
             )}
           </div>
           <div className="student-card-top">
@@ -127,7 +115,7 @@ function StudentDirectoryCard({
         </CardContent>
       </Card>
       {editOpen && (
-        <div className="feedback-backdrop" role="dialog" aria-modal="true" aria-label={`${student.name} Lexile and AR editor`}>
+        <div className="feedback-backdrop" role="dialog" aria-modal="true" aria-label={`${student.name} AR editor`}>
           <Card className="student-lexile-editor">
             <CardHeader>
               <div className="student-task-dialog-title">
@@ -140,22 +128,12 @@ function StudentDirectoryCard({
                 </div>
               </div>
               <CardAction>
-                <Button variant="ghost" size="icon-sm" aria-label="Close Lexile and AR editor" onClick={() => setEditOpen(false)}>
+                <Button variant="ghost" size="icon-sm" aria-label="Close AR editor" onClick={() => setEditOpen(false)}>
                   <X size={18} />
                 </Button>
               </CardAction>
             </CardHeader>
             <CardContent>
-              <label>
-                <span>Lexile</span>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={lexileValue}
-                  onChange={(event) => changeLexile(event.target.value)}
-                />
-              </label>
               <label>
                 <span>AR</span>
                 <Input
@@ -166,12 +144,16 @@ function StudentDirectoryCard({
                   onChange={(event) => changeAr(event.target.value)}
                 />
               </label>
+              <label>
+                <span>Lexile</span>
+                <strong className="student-lexile-value">{lexileValue}L</strong>
+              </label>
             </CardContent>
             <CardFooter>
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>
                 Cancel
               </Button>
-              <Button type="button" onClick={saveLexileAr}>
+              <Button type="button" onClick={saveAr}>
                 Save
               </Button>
             </CardFooter>

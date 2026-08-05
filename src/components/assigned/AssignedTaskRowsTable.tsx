@@ -27,7 +27,7 @@ export function AssignedTaskRowsTable({
   onFeedback: (row: AssignedTaskRow) => void;
 }) {
   return (
-    <div className="assigned-task-table" role="table" aria-label="Assigned task list">
+    <div className="assigned-task-table" data-show-student={showStudent} role="table" aria-label="Assigned task list">
       <div className="assigned-task-table-head" role="row">
         <span role="columnheader">Task Info</span>
         {showStudent && <span role="columnheader">Student</span>}

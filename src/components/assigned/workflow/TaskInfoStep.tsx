@@ -1,8 +1,7 @@
-import { AudioLines, BookOpen, MonitorPlay } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MultiSelect } from "@/components/shared/MultiSelect";
-import type { ResourceType } from "@/types";
+import { TypeFilterIcon } from "@/components/shared/TypeFilterIcon";
 
 export type AssignContentType = "Reading" | "Video" | "Podcast";
 
@@ -25,12 +24,6 @@ export const assignGenreOptions = [
 ];
 
 export const assignTopicOptions = ["All", "Science", "Chinese Arts", "Amphibians", "Social Studies"];
-
-function AssignTypeIcon({ type }: { type: ResourceType }) {
-  if (type === "Video") return <MonitorPlay size={24} aria-hidden="true" />;
-  if (type === "Podcast") return <AudioLines size={24} aria-hidden="true" />;
-  return <BookOpen size={24} aria-hidden="true" />;
-}
 
 export function TaskInfoStep({
   taskCounts,
@@ -86,7 +79,7 @@ export function TaskInfoStep({
                 }
               }}
             >
-              <AssignTypeIcon type={item.type} />
+              <TypeFilterIcon type={item.type} />
               <span>{item.label}</span>
               <div className="assign-content-count" aria-label={`${item.label} quantity`}>
                 <Button
