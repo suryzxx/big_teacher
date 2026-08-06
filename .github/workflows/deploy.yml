@@ -44,6 +44,8 @@ jobs:
 
       - name: Build
         run: pnpm build:test
+        env:
+          VITE_APP_BASE: /big_teacher/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
