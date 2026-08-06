@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build:test": "vite build --mode test",
+    "build:prod": "tsc -b && vite build",
     "lint": "npm run lint:imports && npm run lint:eslint",
     "lint:imports": "node scripts/check-import-graph.mjs",
     "lint:eslint": "eslint .",
